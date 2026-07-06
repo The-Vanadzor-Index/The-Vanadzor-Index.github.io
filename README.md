@@ -1,1 +1,1 @@
-# Vanadzor-Index.github.io
+# The-Vanadzor-Index.github.io
