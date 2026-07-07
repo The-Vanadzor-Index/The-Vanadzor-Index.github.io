@@ -4,3 +4,8 @@ description: >-
   doctors, government services, taxis, repair services, restaurants, hotels,
   and things to do, all in one searchable page.
 lang: en
+
+# This site is one self-contained HTML file with no Jekyll templating,
+# so no theme or plugins are needed — GitHub Pages just serves it as-is.
+theme: null
+plugins: []
