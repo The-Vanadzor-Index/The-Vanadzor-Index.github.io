@@ -3502,6 +3502,20 @@ document.getElementById('chipRow').addEventListener('click', function(e){
       // not a snapshot of whatever state this session happened to be in.
       clone.className = 'no-js';
 
+      // Mark this as an offline snapshot so the init script always shows
+      // personal contacts on load, regardless of the live page's toggle
+      // state or any saved preference in storage.
+      clone.setAttribute('data-offline-snapshot', '1');
+
+      // Show personal-contact cards in the static markup too, as a
+      // fallback for the (unlikely) case JS doesn't run in the saved copy.
+      var clonePersonalCards = clone.querySelectorAll('[data-personal="true"]');
+      for(var p=0; p<clonePersonalCards.length; p++){
+        clonePersonalCards[p].className = clonePersonalCards[p].className.replace(/\bpersonal-off\b/g, '').replace(/\s+/g, ' ').replace(/^\s|\s$/g, '');
+      }
+      var clonePersonalToggle = clone.querySelector('#personalToggle');
+      if(clonePersonalToggle){ clonePersonalToggle.removeAttribute('checked'); }
+
       // Clear any search text so the saved copy starts unfiltered.
       var cloneSearch = clone.querySelector('#searchInput');
       if(cloneSearch){ cloneSearch.setAttribute('value', ''); cloneSearch.value = ''; }
@@ -3705,7 +3719,8 @@ document.getElementById('chipRow').addEventListener('click', function(e){
   }
 
   var saved = loadPreference();
-  var hideByDefault = (saved === null) ? true : (saved === '1');
+  var isOfflineSnapshot = document.documentElement.getAttribute('data-offline-snapshot') === '1';
+  var hideByDefault = isOfflineSnapshot ? false : ((saved === null) ? true : (saved === '1'));
   toggle.checked = hideByDefault;
   applyPersonalVisibility(hideByDefault);
 
