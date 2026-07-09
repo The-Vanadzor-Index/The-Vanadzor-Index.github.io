@@ -177,6 +177,15 @@
     letter-spacing:-0.01em;
     line-height:0.95;
   }
+  .title-word{
+    display:inline;
+  }
+  h1.title.stack-3 .title-word{
+    display:block;
+  }
+  h1.title.stack-3{
+    line-height:1.05;
+  }
   .title em{
     font-style:italic;
     font-weight:400;
@@ -696,7 +705,7 @@
 <header class="masthead" id="top">
 <button aria-label="Toggle dark mode" class="js-only theme-toggle" id="themeToggle" type="button"><svg aria-hidden="true" height="20" id="themeIcon" viewBox="0 0 24 24" width="20"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor"></path></svg></button>
 <div class="eyebrow">Compiled &amp; Cross-Referenced</div>
-<h1 class="title">The Vanadzor <em>Index</em></h1>
+<h1 class="title" id="mastheadTitle"><span class="title-word">The</span> <span class="title-word">Vanadzor</span> <em class="title-word">Index</em></h1>
 <div class="subtitle">a working directory of clinics, offices, kitchens, beds, tradespeople &amp; transit</div>
 <div class="stamp">388 entries on file</div>
 </header>
@@ -3286,6 +3295,32 @@ var VANADZOR_VERSION = '1.0';
 (function(){
   var versionEl = document.getElementById('versionTag');
   if(versionEl){ versionEl.textContent = 'v' + VANADZOR_VERSION; }
+})();
+
+(function(){
+  var title = document.getElementById('mastheadTitle');
+  if(!title) return;
+
+  function updateTitleLayout(){
+    title.classList.remove('stack-3');
+    var prevWhiteSpace = title.style.whiteSpace;
+    title.style.whiteSpace = 'nowrap';
+    var fits = title.scrollWidth <= title.clientWidth + 1;
+    title.style.whiteSpace = prevWhiteSpace;
+    if(!fits){ title.classList.add('stack-3'); }
+  }
+
+  updateTitleLayout();
+
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(updateTitleLayout).catch(function(){});
+  }
+
+  var resizeTimer;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(updateTitleLayout, 100);
+  });
 })();
 
 var activeCat = 'all';
