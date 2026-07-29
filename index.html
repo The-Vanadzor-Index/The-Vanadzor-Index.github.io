@@ -954,7 +954,7 @@
         </svg>
       </div>
       <button
-        aria-label="Toggle dark mode"
+        aria-label="Switch to light mode"
         class="js-only theme-toggle"
         id="themeToggle"
         type="button"
@@ -967,9 +967,17 @@
           width="20"
         >
           <path
-            d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+            d="M12 2a10 10 0 000 20V2z"
             fill="currentColor"
           ></path>
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          ></circle>
         </svg>
       </button>
       <div class="eyebrow">Compiled &amp; Cross-Referenced</div>
@@ -9137,16 +9145,37 @@
         var toggle = document.getElementById("themeToggle");
         if (!toggle) return;
 
-        function getEffectiveTheme() {
-          var attr = document.documentElement.getAttribute("data-theme");
-          if (attr === "light" || attr === "dark") return attr;
-          if (
+        var MODES = ["system", "light", "dark"];
+
+        function getStoredMode() {
+          try {
+            var v = localStorage.getItem("vanadzor-theme");
+            if (v === "light" || v === "dark" || v === "system") return v;
+          } catch (e) {}
+          return "system";
+        }
+
+        function systemPrefersDark() {
+          return !!(
             window.matchMedia &&
             window.matchMedia("(prefers-color-scheme: dark)").matches
-          )
-            return "dark";
-          return "light";
+          );
         }
+
+        function effectiveTheme(mode) {
+          if (mode === "light" || mode === "dark") return mode;
+          return systemPrefersDark() ? "dark" : "light";
+        }
+
+        function applyMode(mode) {
+          if (mode === "light" || mode === "dark") {
+            document.documentElement.setAttribute("data-theme", mode);
+          } else {
+            document.documentElement.removeAttribute("data-theme");
+          }
+        }
+
+        var currentMode = getStoredMode();
 
         var iconEl = document.getElementById("themeIcon");
         var MOON_SVG =
@@ -9163,33 +9192,44 @@
           '<line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>' +
           '<line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>' +
           "</g>";
+        var SYSTEM_SVG =
+          '<path d="M12 2a10 10 0 000 20V2z" fill="currentColor"></path>' +
+          '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>';
+
+        var LABELS = {
+          system: "Switch to light mode",
+          light: "Switch to dark mode",
+          dark: "Switch to system theme",
+        };
 
         function updateIcon() {
-          var eff = getEffectiveTheme();
           if (iconEl) {
-            iconEl.innerHTML = eff === "dark" ? SUN_SVG : MOON_SVG;
+            iconEl.innerHTML =
+              currentMode === "system"
+                ? SYSTEM_SVG
+                : effectiveTheme(currentMode) === "dark"
+                  ? SUN_SVG
+                  : MOON_SVG;
           }
-          toggle.setAttribute(
-            "aria-label",
-            eff === "dark" ? "Switch to light mode" : "Switch to dark mode",
-          );
+          toggle.setAttribute("aria-label", LABELS[currentMode]);
         }
 
         toggle.addEventListener("click", function () {
-          var next = getEffectiveTheme() === "dark" ? "light" : "dark";
-          document.documentElement.setAttribute("data-theme", next);
+          currentMode = MODES[(MODES.indexOf(currentMode) + 1) % MODES.length];
+          applyMode(currentMode);
           try {
-            localStorage.setItem("vanadzor-theme", next);
+            localStorage.setItem("vanadzor-theme", currentMode);
           } catch (e) {}
           updateIcon();
         });
 
+        applyMode(currentMode);
         updateIcon();
 
         if (window.matchMedia) {
           var mq = window.matchMedia("(prefers-color-scheme: dark)");
           var onChange = function () {
-            if (!document.documentElement.getAttribute("data-theme")) {
+            if (currentMode === "system") {
               updateIcon();
             }
           };
