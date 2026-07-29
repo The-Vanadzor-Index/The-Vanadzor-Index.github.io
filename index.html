@@ -3603,7 +3603,14 @@ document.getElementById('chipRow').addEventListener('click', function(e){
       if(cloneDownloadBtn){
         var offlineNotice = clone.ownerDocument.createElement('div');
         offlineNotice.className = 'offline-notice';
-        offlineNotice.textContent = 'This is a downloaded offline copy — it does not include any updates or revisions made to the index since it was saved.';
+        offlineNotice.appendChild(clone.ownerDocument.createTextNode('This is a downloaded offline copy — it does not include any updates or revisions made to the index since it was saved.'));
+        offlineNotice.appendChild(clone.ownerDocument.createElement('br'));
+        var onlineLink = clone.ownerDocument.createElement('a');
+        onlineLink.href = 'https://the-vanadzor-index.github.io/';
+        onlineLink.rel = 'noopener';
+        onlineLink.target = '_blank';
+        onlineLink.textContent = 'Open the current version online';
+        offlineNotice.appendChild(onlineLink);
         cloneDownloadBtn.parentNode.replaceChild(offlineNotice, cloneDownloadBtn);
       }
 
