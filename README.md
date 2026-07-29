@@ -42,9 +42,11 @@ All content lives directly in the HTML as `.card` elements grouped into `.subgro
 
 ## Sources & attribution
 
-Entries are compiled from:
-- [Контакты и база знаний](https://etonawa.notion.site/3332f9074e57803491e5f2449cdd8480) and [Транспорт и доставка](https://etonawa.notion.site/3392f9074e578082bd22e06251706381) — etonawa.notion.site
+Entries are compiled in collaboration with:
+- [Контакты и база знаний](https://etonawa.notion.site/3332f9074e57803491e5f2449cdd8480) and [Транспорт и доставка](https://etonawa.notion.site/3392f9074e578082bd22e06251706381) — etonawa.notion.site, licensed [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), with no warranties given
 - The index's own entries, added and verified independently
+
+Entries taken from those databases are translated, edited and extended here.
 
 ## Disclaimer
 
@@ -53,15 +55,25 @@ This directory is a community-maintained, best-effort resource. Entries may beco
 ## License
 
 Not one work — three parts, three sets of terms.
+**[`LICENSES.md`](LICENSES.md) is the map;** this is the short version.
 
 | Part | Terms |
 | --- | --- |
-| **Directory content** — the entries and their arrangement | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) |
-| **Code** — the CSS and page structure, the JavaScript | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) |
+| **Directory content** — the entries and their arrangement | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — [`LICENSE`](LICENSE) |
+| **Code** — the CSS and page structure, the JavaScript | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) — [`LICENSE-CODE`](LICENSE-CODE) |
 | **The name "The Vanadzor Index", the masthead and the site icon** | All rights reserved |
 
 Everything is noncommercial. For commercial use of any part, ask:
 <kocharyan.armen@protonmail.com>.
+
+**Forking.** You may take the entries and the code on the terms above. The name
+and the artwork are not licensed by either — a fork renames. You may of course
+say your work is derived from The Vanadzor Index; that credit is required, not
+merely allowed.
+
+**Attribution** has a specified form — see [`LICENSES.md`](LICENSES.md) §1. It
+credits the two upstream databases as well as this index, and it has to be
+visible to a reader in the same view as the content.
 
 ## Acknowledgments
 

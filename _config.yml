@@ -13,4 +13,8 @@ plugins: []
 # Keep repo housekeeping files out of the published site.
 exclude:
   - README.md
+  # Licensing: LICENSE covers the content, LICENSE-CODE the code, and
+  # LICENSES.md maps which part of the built page each one governs.
   - LICENSE
+  - LICENSE-CODE
+  - LICENSES.md
