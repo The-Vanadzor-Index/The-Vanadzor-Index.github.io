@@ -47,6 +47,7 @@
         --rust: #a8451f;
         --tab-amber: #c98a2c;
         --muted: #6b6555;
+        --muted-strong: #57513f;
         --shadow: 0 1px 0 rgba(35, 41, 31, 0.06);
         --shadow-soft: rgba(35, 41, 31, 0.05);
         --shadow-med: rgba(35, 41, 31, 0.1);
@@ -67,6 +68,7 @@
           --rust: #e08a57;
           --tab-amber: #e8b45c;
           --muted: #c9c4b2;
+          --muted-strong: #d6d1bf;
           --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
           --shadow-soft: rgba(0, 0, 0, 0.25);
           --shadow-med: rgba(0, 0, 0, 0.35);
@@ -87,6 +89,7 @@
         --rust: #a8451f;
         --tab-amber: #c98a2c;
         --muted: #6b6555;
+        --muted-strong: #57513f;
         --shadow: 0 1px 0 rgba(35, 41, 31, 0.06);
         --shadow-soft: rgba(35, 41, 31, 0.05);
         --shadow-med: rgba(35, 41, 31, 0.1);
@@ -106,6 +109,7 @@
         --rust: #e08a57;
         --tab-amber: #e8b45c;
         --muted: #c9c4b2;
+        --muted-strong: #d6d1bf;
         --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
         --shadow-soft: rgba(0, 0, 0, 0.25);
         --shadow-med: rgba(0, 0, 0, 0.35);
@@ -215,6 +219,48 @@
           padding-top: 4.6rem;
         }
       }
+      /* Ararat (Masis & Sis) outline behind the masthead type */
+      .ararat {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+        color: var(--pine);
+        opacity: 0.32;
+      }
+      .ararat path {
+        vector-effect: non-scaling-stroke;
+      }
+      .ararat svg {
+        position: absolute;
+        bottom: -1px;
+        left: 50%;
+        transform: translateX(-50%);
+        /* Below ~840px the drawing stops narrowing and is cropped by the
+           overflow instead, so the peaks never squeeze into spikes. */
+        width: 100%;
+        width: max(100%, 840px);
+        height: 84%;
+      }
+      @media (prefers-color-scheme: dark) {
+        .ararat {
+          opacity: 0.44;
+        }
+      }
+      html[data-theme="dark"] .ararat {
+        opacity: 0.44;
+      }
+      html[data-theme="light"] .ararat {
+        opacity: 0.32;
+      }
+      header.masthead .eyebrow,
+      header.masthead h1.title,
+      header.masthead .subtitle,
+      header.masthead .stamp {
+        position: relative;
+        z-index: 1;
+      }
       .eyebrow {
         font-family: "Courier New", monospace;
         letter-spacing: 0.28em;
@@ -248,7 +294,7 @@
       .subtitle {
         font-family: "Courier New", monospace;
         font-size: 0.85rem;
-        color: var(--muted);
+        color: var(--muted-strong);
         margin-top: 0.85rem;
         letter-spacing: 0.03em;
       }
@@ -879,6 +925,34 @@
   <body>
     <div class="grain"></div>
     <header class="masthead" id="top">
+      <div aria-hidden="true" class="ararat">
+        <svg
+          fill="none"
+          preserveAspectRatio="none"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          viewBox="0 0 1200 300"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <!--
+            One continuous contour, drawn as the massif is seen from northern
+            Armenia: Sis on the left, the saddle, then Masis on the right.
+          -->
+          <path
+            d="M-24 292 C120 289, 222 285, 236 268 L366 104 C375 93, 384 117, 392 128 L448 206 C457 219, 565 198, 588 178 L742 42 C757 29, 770 46, 782 62 L872 182 C896 214, 1040 286, 1224 292"
+            stroke-width="1.3"
+          />
+          <!-- snow, held to a few hairlines -->
+          <g opacity="0.55" stroke-width="1">
+            <path
+              d="M668 112 C686 124, 702 108, 720 118 C738 128, 754 112, 772 120 C790 128, 806 126, 822 120"
+            />
+            <path d="M772 136 C792 148, 812 152, 832 146" />
+            <path d="M340 142 C352 152, 364 146, 376 152 C386 157, 394 150, 404 154" />
+          </g>
+        </svg>
+      </div>
       <button
         aria-label="Toggle dark mode"
         class="js-only theme-toggle"
