@@ -400,9 +400,17 @@
       }
       .chip-row {
         display: flex;
+        /* Fill the wrapper rather than shrink-wrapping the chips, so there is
+           free space for justify-content to centre them against. */
+        flex: 1 1 auto;
+        min-width: 0;
         flex-wrap: nowrap;
         gap: 0.4rem;
         align-items: center;
+        /* Centered while the whole strip fits; "safe" makes the browser fall
+           back to flex-start once it overflows, so no chip is scrolled out of
+           reach on the left. */
+        justify-content: safe center;
         overflow-x: auto;
         overflow-y: hidden;
         scroll-behavior: smooth;
