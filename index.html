@@ -9145,8 +9145,6 @@
         var toggle = document.getElementById("themeToggle");
         if (!toggle) return;
 
-        var MODES = ["system", "light", "dark"];
-
         function getStoredMode() {
           try {
             var v = localStorage.getItem("vanadzor-theme");
@@ -9196,11 +9194,28 @@
           '<path d="M12 2a10 10 0 000 20V2z" fill="currentColor"></path>' +
           '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>';
 
+        function cycleOrder() {
+          return systemPrefersDark()
+            ? ["system", "light", "dark"]
+            : ["system", "dark", "light"];
+        }
+
+        function nextMode() {
+          var order = cycleOrder();
+          var i = order.indexOf(currentMode);
+          if (i === -1) i = 0;
+          return order[(i + 1) % order.length];
+        }
+
         var LABELS = {
-          system: "Switch to light mode",
-          light: "Switch to dark mode",
-          dark: "Switch to system theme",
+          system: "Switch to system theme",
+          light: "Switch to light mode",
+          dark: "Switch to dark mode",
         };
+
+        function currentLabel() {
+          return LABELS[nextMode()];
+        }
 
         function updateIcon() {
           if (iconEl) {
@@ -9211,11 +9226,11 @@
                   ? SUN_SVG
                   : MOON_SVG;
           }
-          toggle.setAttribute("aria-label", LABELS[currentMode]);
+          toggle.setAttribute("aria-label", currentLabel());
         }
 
         toggle.addEventListener("click", function () {
-          currentMode = MODES[(MODES.indexOf(currentMode) + 1) % MODES.length];
+          currentMode = nextMode();
           applyMode(currentMode);
           try {
             localStorage.setItem("vanadzor-theme", currentMode);
