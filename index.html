@@ -909,6 +909,31 @@
           scroll-behavior: auto !important;
         }
       }
+
+      .shawarma-confetti {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 9999;
+      }
+      .shawarma-confetti-piece {
+        position: absolute;
+        top: -2rem;
+        animation-name: shawarmaFall;
+        animation-timing-function: linear;
+        animation-fill-mode: forwards;
+      }
+      @keyframes shawarmaFall {
+        0% {
+          transform: translateY(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(105vh) rotate(360deg);
+          opacity: 0.85;
+        }
+      }
     </style>
   </head>
   <body>
@@ -8770,6 +8795,52 @@
       document
         .getElementById("searchInput")
         .addEventListener("input", applyFilters);
+
+      (function () {
+        var searchEl = document.getElementById("searchInput");
+        var shawarmaActive = false;
+
+        function launchShawarmaConfetti() {
+          if (
+            window.matchMedia &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ) {
+            return;
+          }
+          var container = document.createElement("div");
+          container.className = "shawarma-confetti";
+          container.setAttribute("aria-hidden", "true");
+          document.body.appendChild(container);
+
+          var pieceCount = 28;
+          for (var i = 0; i < pieceCount; i++) {
+            var piece = document.createElement("span");
+            piece.className = "shawarma-confetti-piece";
+            piece.textContent = "🌯";
+            piece.style.left = Math.random() * 100 + "vw";
+            piece.style.fontSize = 1 + Math.random() * 1.2 + "rem";
+            piece.style.animationDuration = 1.8 + Math.random() * 1.4 + "s";
+            piece.style.animationDelay = Math.random() * 0.5 + "s";
+            container.appendChild(piece);
+          }
+
+          setTimeout(function () {
+            if (container.parentNode) {
+              container.parentNode.removeChild(container);
+            }
+          }, 3500);
+        }
+
+        searchEl.addEventListener("input", function () {
+          var matches = searchEl.value.trim().toLowerCase().indexOf("shawarma") !== -1;
+          if (matches && !shawarmaActive) {
+            shawarmaActive = true;
+            launchShawarmaConfetti();
+          } else if (!matches) {
+            shawarmaActive = false;
+          }
+        });
+      })();
 
       function scrollToWithBarOffset(el) {
         if (!el) return;
