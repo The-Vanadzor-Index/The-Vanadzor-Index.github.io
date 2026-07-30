@@ -8797,6 +8797,9 @@
           .getElementById("searchInput")
           .value.trim()
           .toLowerCase();
+        // every whitespace-separated token must appear somewhere in data-search,
+        // so "dentist vardanants" matches a card holding both, in any order
+        var terms = q ? q.split(/\s+/) : [];
         var cards = document.querySelectorAll(".card");
         var visibleCount = 0;
 
@@ -8805,7 +8808,13 @@
           var matchesCat =
             activeCat === "all" || card.getAttribute("data-cat") === activeCat;
           var searchBlob = card.getAttribute("data-search") || "";
-          var matchesSearch = !q || searchBlob.indexOf(q) !== -1;
+          var matchesSearch = true;
+          for (var t = 0; t < terms.length; t++) {
+            if (searchBlob.indexOf(terms[t]) === -1) {
+              matchesSearch = false;
+              break;
+            }
+          }
           var show = matchesCat && matchesSearch;
           var isPersonalHidden = card.className.indexOf("personal-off") !== -1;
           if (show) {
