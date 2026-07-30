@@ -109,7 +109,7 @@ sets of terms.
 - the name **"The Vanadzor Index"** — in any language, script or
   transliteration, and in any translation, rendering or close variant of it,
   whether or not that form has ever been used here
-- the masthead artwork — `vanadzor-masthead.png`
+- the masthead artwork — `vanadzor-masthead.psd`, `vanadzor-masthead.png`
 - the site icon — the inline SVG favicon in `index.html`
 
 The masthead ships as a published file in its own right — `vanadzor-masthead.png` is
