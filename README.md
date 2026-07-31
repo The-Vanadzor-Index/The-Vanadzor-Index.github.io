@@ -48,6 +48,9 @@ Entries are compiled in collaboration with:
 
 Entries taken from those databases are translated, edited and extended here.
 
+Map geometry are © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright),
+licensed [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
+
 ## Disclaimer
 
 This directory is a community-maintained, best-effort resource. Entries may become outdated, inaccurate, or incomplete over time, and inclusion in this index is not an endorsement. Nobody involved in compiling or maintaining this index is responsible for the accuracy of any listing, or for the quality, safety, or conduct of any business, service, or individual listed here. Use your own judgment, and verify details independently before relying on them.
