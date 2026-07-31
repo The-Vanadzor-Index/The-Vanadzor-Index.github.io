@@ -302,6 +302,19 @@
         font-weight: 400;
         color: var(--pine);
       }
+      /* "Vanadzor" in the masthead jumps to the About section. Kept visually
+         identical to the rest of the title so the heading still reads as one
+         wordmark; the affordance only appears on hover/focus. */
+      .title-link {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        transition: border-color 0.15s;
+      }
+      .title-link:hover,
+      .title-link:focus-visible {
+        border-bottom-color: var(--rust);
+      }
       .subtitle {
         font-family: "Courier New", monospace;
         font-size: 0.85rem;
@@ -338,6 +351,23 @@
       }
 
       /* ---------- Controls ---------- */
+      /* How far before the end of the directory the sticky bar lets go.
+         position:sticky is bounded by its containing block, so releasing the
+         bar early means making .directory end early: .bar-release pulls the
+         wrapper's bottom up by this much, and .about pushes itself back down
+         by the same amount, so nothing actually moves on screen. Raising this
+         value releases the bar sooner. flow-root stops that negative margin
+         collapsing out of the wrapper (overflow would work too, but it would
+         break sticky). */
+      :root {
+        --bar-release: 60vh;
+      }
+      .directory {
+        display: flow-root;
+      }
+      .bar-release {
+        margin-bottom: calc(-1 * var(--bar-release));
+      }
       .controls {
         position: sticky;
         top: 0;
@@ -547,7 +577,10 @@
         z-index: 1;
         max-width: 1180px;
         margin: 0 auto;
-        padding: 2.4rem 1.5rem 6rem;
+        /* no bottom padding: the last section's own 3.6rem margin is the gap,
+           which keeps the hidden-subcategory notice and the personal-contacts
+           toggle attached to the entries they describe */
+        padding: 2.4rem 1.5rem 0;
       }
 
       section.category {
@@ -930,7 +963,7 @@
           gap: 0.4rem;
         }
         main {
-          padding: 1.8rem 1rem 4rem;
+          padding: 1.8rem 1rem 0;
         }
         .card-grid {
           grid-template-columns: 1fr;
@@ -966,6 +999,112 @@
         100% {
           transform: translateY(105vh) rotate(360deg);
           opacity: 0.85;
+        }
+      }
+
+      /* ---- About the city ---------------------------------------------
+         Sits between the directory and the footer and carries the map
+         plate, so the plate reads as an illustration of the city rather
+         than as loose artwork. Static prose: it lives outside <main>, so
+         search and category filtering never touch it, and it needs no JS. */
+      .about {
+        max-width: 1180px;
+        /* gives back exactly what .bar-release took away, plus the visible
+           gap that separates the directory from the About section */
+        margin: calc(var(--bar-release) + 4rem) auto 0;
+        padding: 0 1.5rem;
+        /* clears the sticky controls bar when jumped to from the masthead */
+        scroll-margin-top: 5.5rem;
+      }
+      .about-head {
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.4rem;
+        display: flex;
+        align-items: baseline;
+        gap: 0.9rem;
+        flex-wrap: wrap;
+      }
+      .about-head h2 {
+        font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+        margin: 0;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .about-head .about-kicker {
+        font-family: "Courier New", monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-left: auto;
+      }
+      .about-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+        gap: 1.6rem 2.6rem;
+        align-items: start;
+      }
+      .about-body p {
+        margin: 0 0 0.9rem;
+        max-width: 62ch;
+        line-height: 1.62;
+      }
+      .about-body p:last-of-type {
+        margin-bottom: 0;
+      }
+      .about-prose a {
+        color: var(--pine-deep);
+        text-decoration: none;
+        border-bottom: 1px solid var(--kraft);
+      }
+      .about-prose a:hover,
+      .about-prose a:focus-visible {
+        color: var(--rust);
+        border-bottom-color: var(--rust);
+      }
+      /* Civic constants, set as a ledger register to match the cards. */
+      .about-facts {
+        margin: 0;
+        padding: 1rem 1.2rem;
+        border: 1.5px solid var(--kraft-line);
+        border-radius: 3px;
+        background: var(--paper-card);
+        font-family: "Courier New", monospace;
+        font-size: 0.78rem;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 0.5rem 1rem;
+      }
+      .about-facts dt {
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        font-size: 0.64rem;
+        color: var(--rust);
+        padding-top: 0.15em;
+      }
+      .about-facts dd {
+        margin: 0;
+        color: var(--muted-strong);
+      }
+      .about-facts dd .muted {
+        color: var(--muted);
+      }
+      .about-source {
+        margin: 1.5rem 0 2.2rem;
+        font-family: "Courier New", monospace;
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      @media (max-width: 780px) {
+        .about-body {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 1.4rem;
+        }
+        .about-head .about-kicker {
+          margin-left: 0;
+          flex-basis: 100%;
         }
       }
     </style>
@@ -1030,7 +1169,13 @@
       <div class="eyebrow">Compiled &amp; Cross-Referenced</div>
       <h1 class="title" id="mastheadTitle">
         <span class="title-word">The</span>
-        <span class="title-word">Vanadzor</span>
+        <!-- Jumps to the About section. A plain anchor, so it works with
+             JavaScript off; the smooth scroll comes from the existing
+             scroll-behavior rule, which prefers-reduced-motion already
+             disables. -->
+        <span class="title-word"
+          ><a class="title-link" href="#about">Vanadzor</a></span
+        >
         <em class="title-word">Index</em>
       </h1>
       <div class="subtitle">
@@ -1039,6 +1184,11 @@
       </div>
       <div class="stamp">389 entries on file</div>
     </header>
+    <!-- Everything the sticky controls bar belongs to. position:sticky is
+         bounded by its containing block, so scoping the bar to this wrapper
+         is what releases it at the About section and re-pins it on the way
+         back up — no scroll listener involved. -->
+    <div class="directory">
     <div class="controls">
       <div class="search-wrap js-only">
         <input
@@ -8676,6 +8826,119 @@
         businesses)</span
       >
     </label>
+      <div aria-hidden="true" class="bar-release"></div>
+    </div>
+    <!-- About the city. Plain prose and a small register of civic
+         constants, wrapping the map plate so the plate has something to
+         illustrate. Outside <main>, so searching or filtering the
+         directory never hides it. -->
+    <section class="about" id="about">
+      <div class="about-head">
+        <h2>Vanadzor</h2>
+        <span class="about-kicker">The city on stage</span>
+      </div>
+      <div class="about-body">
+        <div class="about-prose">
+          <p>
+            <a
+              href="https://en.wikipedia.org/wiki/Vanadzor"
+              rel="noopener"
+              target="_blank"
+              >Vanadzor</a
+            >
+            is the third-largest city in
+            <a
+              href="https://en.wikipedia.org/wiki/Armenia"
+              rel="noopener"
+              target="_blank"
+              >Armenia</a
+            >
+            and the capital of
+            <a
+              href="https://en.wikipedia.org/wiki/Lori_(province)"
+              rel="noopener"
+              target="_blank"
+              >Lori Province</a
+            >, about 128 km north of
+            <a
+              href="https://en.wikipedia.org/wiki/Yerevan"
+              rel="noopener"
+              target="_blank"
+              >Yerevan</a
+            >. It sits at roughly 1,350 m in the valley where the
+            <a
+              href="https://en.wikipedia.org/wiki/Tandzut_River"
+              rel="noopener"
+              target="_blank"
+              >Tandzut</a
+            >
+            and Vanadzor rivers run into the
+            <a
+              href="https://en.wikipedia.org/wiki/Pambak_(river)"
+              rel="noopener"
+              target="_blank"
+              >Pambak</a
+            >, hemmed in on either side by the Bazum and Pambak ranges, both
+            of which rise above 2,500 m. That valley floor is why the city is
+            long and narrow rather than round, and why its districts are
+            strung out along the water.
+          </p>
+          <p>
+            It was known for centuries as Gharakilisa, was renamed Kirovakan
+            in 1935 after the Soviet official
+            <a
+              href="https://en.wikipedia.org/wiki/Sergey_Kirov"
+              rel="noopener"
+              target="_blank"
+              >Sergey Kirov</a
+            >, and took the name Vanadzor on 25 June 1992, after
+            independence. Under the Soviet Union it was a chemical-industry
+            town — the acetate silk plant was the largest single employer —
+            and much of that industry did not survive the transition. The
+            infamous
+            <a
+              href="https://en.wikipedia.org/wiki/1988_Armenian_earthquake"
+              rel="noopener"
+              target="_blank"
+              >1988 Spitak earthquake</a
+            >
+            struck the city hard — roughly half its building stock was
+            damaged or destroyed — though it shook less violently than
+            <a
+              href="https://en.wikipedia.org/wiki/Spitak"
+              rel="noopener"
+              target="_blank"
+              >Spitak</a
+            >
+            and
+            <a
+              href="https://en.wikipedia.org/wiki/Gyumri"
+              rel="noopener"
+              target="_blank"
+              >Gyumri</a
+            >, which sat closer to the epicentre and lost far more.
+          </p>
+        </div>
+        <dl class="about-facts">
+          <dt>Province</dt>
+          <dd>Lori</dd>
+          <dt>Population</dt>
+          <dd>75,186 <span class="muted">(2022 census)</span></dd>
+          <dt>Elevation</dt>
+          <dd>≈ 1,350 m</dd>
+          <dt>Rivers</dt>
+          <dd>Pambak · Tandzut · Vanadzor</dd>
+          <dt>Postal</dt>
+          <dd>2001–2006</dd>
+          <dt>Dialling</dt>
+          <dd>0322</dd>
+        </dl>
+      </div>
+      <div class="about-source">
+        Population from the 2022 Armenian census; other figures from public
+        reference sources and the author's own head.
+      </div>
+    </section>
     <footer>
       <button class="js-only download-btn" id="downloadBtn" type="button">
         Download the index for offline use
