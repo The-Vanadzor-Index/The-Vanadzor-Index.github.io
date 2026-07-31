@@ -364,9 +364,19 @@
       }
       .directory {
         display: flow-root;
+        /* so .to-top-sentinel can be pinned to this element's bottom edge */
+        position: relative;
       }
       .bar-release {
         margin-bottom: calc(-1 * var(--bar-release));
+      }
+      .to-top-sentinel {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 1px;
+        height: 1px;
+        pointer-events: none;
       }
       .controls {
         position: sticky;
@@ -1002,6 +1012,48 @@
         }
       }
 
+      /* ---- Pomegranate back-to-top ----------------------------------
+         A plain anchor to #top, but it only appears once the sticky controls
+         bar has scrolled away — while the bar is pinned it would be a second
+         way to do the same thing. That condition is viewport-relative, so it
+         needs script: an observer watches .to-top-sentinel, which sits at the
+         exact bottom edge of the bar's sticky container. The button is
+         therefore marked .js-only and is absent altogether without JS. It
+         starts hidden so it cannot flash on first paint. */
+      .to-top {
+        position: fixed;
+        right: 1.1rem;
+        bottom: 1.1rem;
+        z-index: 20;
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid var(--kraft-line);
+        border-radius: 50%;
+        background: var(--paper-card);
+        color: var(--rust);
+        box-shadow: 0 2px 8px var(--shadow-med);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+          opacity 0.18s,
+          visibility 0.18s,
+          transform 0.15s,
+          border-color 0.15s;
+      }
+      .to-top.to-top-shown {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+      .to-top:hover {
+        transform: translateY(-2px);
+        border-color: var(--rust);
+      }
+
       /* ---- About the city ---------------------------------------------
          Sits between the directory and the footer and carries the map
          plate, so the plate reads as an illustration of the city rather
@@ -1310,6 +1362,12 @@
       }
 
       @media (max-width: 560px) {
+        .to-top {
+          width: 36px;
+          height: 36px;
+          right: 0.7rem;
+          bottom: 0.7rem;
+        }
         .map-plate {
           padding: 1rem 0.9rem 0.8rem;
         }
@@ -9039,6 +9097,10 @@
       >
     </label>
       <div aria-hidden="true" class="bar-release"></div>
+      <!-- Absolutely positioned at the wrapper's bottom edge, which is exactly
+           where the sticky bar runs out of container. Once this crosses the top
+           of the viewport the bar is gone and the back-to-top button appears. -->
+      <div aria-hidden="true" class="to-top-sentinel"></div>
     </div>
     <!-- About the city. Plain prose and a small register of civic
          constants, wrapping the map plate so the plate has something to
@@ -9514,6 +9576,29 @@
       </div>
       <div class="version" id="versionTag">v1.0</div>
     </footer>
+    <!-- Pomegranate back-to-top. A plain anchor, so it keeps
+         working with JavaScript switched off. -->
+    <a aria-label="Back to top" class="js-only to-top" href="#top">
+      <svg
+        aria-hidden="true"
+        fill="none"
+        height="22"
+        stroke="currentColor"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="1.5"
+        viewBox="0 0 24 24"
+        width="22"
+      >
+        <path d="M9.6,7.2 L10.6,3.2 L12,5 L13.4,3.2 L14.4,7.2" />
+        <path
+          d="M12,6.6 C16,6.6 18.6,9.8 18.6,13.4 C18.6,17.4 15.6,20.4 12,20.4 C8.4,20.4 5.4,17.4 5.4,13.4 C5.4,9.8 8,6.6 12,6.6 Z"
+        />
+        <circle cx="10" cy="13" fill="currentColor" r="0.9" stroke="none" />
+        <circle cx="14" cy="13" fill="currentColor" r="0.9" stroke="none" />
+        <circle cx="12" cy="16.4" fill="currentColor" r="0.9" stroke="none" />
+      </svg>
+    </a>
     <script>
       var VANADZOR_VERSION = "1.0";
 
@@ -9920,6 +10005,16 @@
               cloneAll.className = cloneAll.className + " active";
             }
 
+            // The snapshot opens at the top, where the sticky bar is still
+            // pinned, so the back-to-top button starts hidden again.
+            var cloneToTop = clone.querySelector(".to-top");
+            if (cloneToTop) {
+              cloneToTop.className = cloneToTop.className
+                .replace(/\bto-top-shown\b/g, "")
+                .replace(/\s+/g, " ")
+                .replace(/^\s|\s$/g, "");
+            }
+
             // Reset the arrow buttons to their initial disabled/enabled state.
             var cloneLeftArrow = clone.querySelector(".chip-arrow-left");
             var cloneRightArrow = clone.querySelector(".chip-arrow-right");
@@ -10238,6 +10333,34 @@
           applyPersonalVisibility(hide);
           savePreference(hide ? "1" : "0");
         });
+      })();
+
+      /* Back-to-top button: shown only once the sticky controls bar has run
+         out of container and scrolled away. .to-top-sentinel sits on that
+         container's bottom edge, so "sentinel is above the viewport" and "bar
+         is gone" are the same moment. The button is .js-only and starts
+         hidden, so a browser without script simply never gets it. */
+      (function () {
+        var btn = document.querySelector(".to-top");
+        var sentinel = document.querySelector(".to-top-sentinel");
+        if (!btn || !sentinel) return;
+
+        function show(on) {
+          btn.classList[on ? "add" : "remove"]("to-top-shown");
+        }
+
+        if (!window.IntersectionObserver) {
+          show(true); // no observer: better always available than never
+          return;
+        }
+
+        new IntersectionObserver(
+          function (entries) {
+            var e = entries[entries.length - 1];
+            show(!e.isIntersecting && e.boundingClientRect.top < 0);
+          },
+          { threshold: 0 }
+        ).observe(sentinel);
       })();
     </script>
   </body>
