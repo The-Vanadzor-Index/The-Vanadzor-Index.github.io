@@ -1377,6 +1377,17 @@
           transform: scale(1.85);
         }
       }
+
+      /* Tap flash and text selection in the site palette instead of the
+         browser's default blue. Districts get their feedback from the ink
+         outline stroke and the name flag, defined with the plate styles. */
+      html {
+        -webkit-tap-highlight-color: transparent;
+      }
+      ::selection {
+        background: var(--rust);
+        color: var(--paper);
+      }
     </style>
   </head>
   <body>
