@@ -1049,9 +1049,14 @@
         visibility: visible;
         pointer-events: auto;
       }
-      .to-top:hover {
-        transform: translateY(-2px);
-        border-color: var(--rust);
+      /* Scoped to real pointers only, same reasoning as .mp-dist:hover below:
+         on a touch screen a tap simulates :hover, which would otherwise leave
+         the button visibly "stuck" in its hover state after the tap ends. */
+      @media (hover: hover) and (pointer: fine) {
+        .to-top:hover {
+          transform: translateY(-2px);
+          border-color: var(--rust);
+        }
       }
 
       /* ---- About the city ---------------------------------------------
