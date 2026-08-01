@@ -19,3 +19,5 @@ exclude:
   - LICENSE-CODE
   - LICENSES.md
   - vanadzor-masthead.psd
+  # Notion source exports — reference material, not part of the site.
+  - "*.zip"
