@@ -1071,6 +1071,69 @@
         }
       }
 
+      /* ---- Tap-to-copy on addresses -----------------------------------
+         .addr-copy is put on address rows by the copy script, never by the
+         markup, so the affordance below only ever appears where the copy
+         actually works — a saved snapshot opened without JS shows the plain
+         row it always was.
+
+         Hover is scoped to real pointers for the same reason as .to-top
+         above: a tap on a touch screen simulates :hover and would leave the
+         address sitting highlighted long after the tap. The highlight is a
+         box-shadow rather than padding so the tint can spill past the text
+         without resizing the row — these cards are packed by a masonry
+         script that re-measures every height change. */
+      @media (hover: hover) and (pointer: fine) {
+        .card-row.addr-copy {
+          cursor: pointer;
+        }
+        .card-row.addr-copy:hover > span:not(.glyph) {
+          color: var(--ink);
+          background: var(--tint-pine);
+          box-shadow: 0 0 0 3px var(--tint-pine);
+          border-radius: 2px;
+        }
+        .card-row.addr-copy:hover > .glyph {
+          color: var(--rust);
+        }
+      }
+
+      /* Confirmation pill for the same feature. On a touch screen the row
+         carries no hover affordance at all, so this pill is the only signal
+         a tap did anything. Injected by script on first copy; it never
+         exists without JS. Sits bottom-centre, clear of the back-to-top
+         button. */
+      .copy-toast {
+        position: fixed;
+        left: 50%;
+        bottom: 1.6rem;
+        z-index: 30;
+        max-width: calc(100vw - 2rem);
+        font-family: "Courier New", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--paper-card);
+        background: var(--pine-deep);
+        border: 1px solid var(--kraft-line);
+        border-radius: 3px;
+        padding: 0.45rem 0.8rem;
+        box-shadow: 0 2px 10px var(--shadow-strong);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translate(-50%, 0.4rem);
+        transition:
+          opacity 0.18s,
+          visibility 0.18s,
+          transform 0.18s;
+      }
+      .copy-toast.copy-toast-shown {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
+      }
+
       /* ---- About the city ---------------------------------------------
          Sits between the directory and the footer and carries the map
          plate, so the plate reads as an illustration of the city rather
@@ -10853,6 +10916,25 @@
                 .replace(/^\s|\s$/g, "");
             }
 
+            // The copy toast is injected at runtime and may be mid-fade when
+            // the snapshot is taken. The saved copy makes its own on demand.
+            var cloneToast = clone.querySelector(".copy-toast");
+            if (cloneToast) {
+              cloneToast.parentNode.removeChild(cloneToast);
+            }
+
+            // Same for the address rows' .addr-copy tag: it carries a pointer
+            // cursor and a hover highlight, which would promise a copy the
+            // saved copy can't deliver if it is ever opened without JS. The
+            // script re-tags them on load whenever JS does run.
+            var cloneAddrRows = clone.querySelectorAll(".addr-copy");
+            for (var q = 0; q < cloneAddrRows.length; q++) {
+              cloneAddrRows[q].className = cloneAddrRows[q].className
+                .replace(/\baddr-copy\b/g, "")
+                .replace(/\s+/g, " ")
+                .replace(/^\s|\s$/g, "");
+            }
+
             // Reset the arrow buttons to their initial disabled/enabled state.
             var cloneLeftArrow = clone.querySelector(".chip-arrow-left");
             var cloneRightArrow = clone.querySelector(".chip-arrow-right");
@@ -11214,6 +11296,118 @@
           },
           { threshold: 0 }
         ).observe(sentinel);
+      })();
+
+      /* Tap-to-copy on address rows. An address is the one field on a card
+         that can't be acted on the way a phone number or a map link can — it
+         has to be carried into a maps app or a message — and on a phone that
+         means fighting the text-selection handles. Tapping the row copies it.
+
+         Rows are found by their ⌂ glyph rather than by something written into
+         the markup, so a new card needs no attribute to opt in. Each match is
+         then tagged .addr-copy, which is what carries the hover affordance in
+         the stylesheet — writing the tag from here rather than into the HTML
+         keeps the cursor and the highlight honest, since they can only show
+         up once the script that makes them mean something has run. Without
+         JS the addresses stay what they always were, plain selectable text. */
+      (function () {
+        var ADDRESS_GLYPH = "⌂";
+        var toast = null;
+        var toastTimer = null;
+
+        function showToast(msg) {
+          if (!toast) {
+            toast = document.createElement("div");
+            toast.className = "copy-toast";
+            toast.setAttribute("role", "status");
+            toast.setAttribute("aria-live", "polite");
+            document.body.appendChild(toast);
+          }
+          toast.textContent = msg;
+          toast.classList.add("copy-toast-shown");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () {
+            toast.classList.remove("copy-toast-shown");
+          }, 1600);
+        }
+
+        // Everything in the row except the glyph, whitespace collapsed — the
+        // address spans are indented across lines in the source.
+        function addressText(row) {
+          var out = "";
+          var kids = row.children;
+          for (var i = 0; i < kids.length; i++) {
+            if (String(kids[i].className).indexOf("glyph") !== -1) continue;
+            out += kids[i].textContent;
+          }
+          return out.replace(/\s+/g, " ").replace(/^\s|\s$/g, "");
+        }
+
+        // Offline snapshots open from file://, where Safari in particular
+        // withholds the async clipboard, so keep the old textarea route as a
+        // fallback rather than leaving the saved copy without the feature.
+        function legacyCopy(text) {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          ta.setAttribute("readonly", "");
+          ta.style.position = "fixed";
+          ta.style.top = "0";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          var ok = false;
+          try {
+            ta.select();
+            ta.setSelectionRange(0, text.length);
+            ok = document.execCommand("copy");
+          } catch (e) {
+            ok = false;
+          }
+          document.body.removeChild(ta);
+          return ok;
+        }
+
+        function report(ok) {
+          showToast(ok ? "Address copied" : "Press and hold to copy");
+        }
+
+        function copy(text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+              function () {
+                report(true);
+              },
+              function () {
+                report(legacyCopy(text));
+              },
+            );
+            return;
+          }
+          report(legacyCopy(text));
+        }
+
+        var rows = document.querySelectorAll(".card-row");
+        for (var i = 0; i < rows.length; i++) {
+          var glyph = rows[i].querySelector(".glyph");
+          if (glyph && glyph.textContent.replace(/\s+/g, "") === ADDRESS_GLYPH) {
+            rows[i].classList.add("addr-copy");
+          }
+        }
+
+        document.addEventListener("click", function (e) {
+          var target = e.target;
+          if (!target || !target.closest) return;
+          var row = target.closest(".addr-copy");
+          if (!row) return;
+          // A row could grow a link later; leave anything clickable alone.
+          if (target.closest("a, button")) return;
+          // Selecting the address by hand ends in a click too. Copying then
+          // would fight the user for the clipboard they were already after.
+          var sel = window.getSelection();
+          if (sel && String(sel)) return;
+          var text = addressText(row);
+          if (!text) return;
+          copy(text);
+        });
       })();
 
       /* Masonry packing. CSS Grid stretches every card in a row to the tallest
