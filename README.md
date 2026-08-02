@@ -48,7 +48,7 @@ Entries are compiled in collaboration with:
 
 Entries taken from those databases are translated, edited and extended here.
 
-Map geometry are © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright),
+Map geometry and tiles are © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright),
 licensed [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
 
 ## Disclaimer

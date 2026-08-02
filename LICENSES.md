@@ -10,7 +10,7 @@ different terms. This file says which is which.
 | The directory content — the entries and their arrangement | CC BY-NC-SA 4.0 | [`LICENSE`](LICENSE) |
 | The code — page structure, CSS, JavaScript | PolyForm Noncommercial 1.0.0 | [`LICENSE-CODE`](LICENSE-CODE) |
 | The name, the masthead and the site icon | All rights reserved | this file, below |
-| Map geometry | © OpenStreetMap contributors, ODbL | this file, below |
+| Map geometry and tiles | © OpenStreetMap contributors, ODbL | this file, below |
 
 Everything here is noncommercial. If you want to use any part of the index
 commercially, ask: <kocharyan.armen@protonmail.com>.
@@ -144,17 +144,28 @@ translated form is reserved on the same terms as the English.
 
 ## 4. Third-party material
 
-**OpenStreetMap.** The city plate is an SVG traced from OpenStreetMap geometry.
-It is a *Produced Work* under section 4.4(b) of the
-[ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — a rendering, not a
-database — so it may be published under the terms above provided OpenStreetMap
-is credited and the ODbL identified, which the plate credit does.
+**OpenStreetMap.** The map panel draws tiles from `tile.openstreetmap.org` and
+the city plate is an SVG traced from OpenStreetMap geometry. Both are
+*Produced Works* under section 4.4(b) of the
+[ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — renderings, not
+databases — so they may be published under the terms above provided
+OpenStreetMap is credited and the ODbL identified, which the plate credit and
+the map panel both do.
 
-**This must stay true.** Tracing geometry into a drawing is one thing;
-extracting coordinates from OpenStreetMap into data would produce a
+**This must stay true.** Extracting coordinates from OpenStreetMap into
+`data-geo`, or assembling any coordinate dataset from it, would produce a
 *Derivative Database* instead, and section 4.4 would then force ODbL onto it.
 ODbL has no noncommercial concept and cannot coexist with the NC element here.
 Keep OpenStreetMap on the Produced Work side of that line.
+
+**Nominatim** supplies reverse-geocoded place names at request time, under the
+same ODbL data. Nothing is stored.
+
+**Yandex Maps** org URLs come from the upstream databases; the `data-geo`
+coordinates are read from the pages those URLs point at. Individual coordinate
+pairs are facts, but their systematic collection is governed by Yandex's own
+terms rather than by anything in this file, and no licence granted here purports
+to cover them.
 
 ---
 
