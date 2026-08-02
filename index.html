@@ -10601,12 +10601,34 @@
 
       var activeCat = "all";
 
+      // A term matches only at the start of a word in data-search, so "bar"
+      // finds "Barber" and "Bar B.Q." but not the "bar" buried in "Gambaryan".
+      // Anything that is not an ASCII letter or digit counts as a word break,
+      // which covers spaces, punctuation, slashes in URLs, dashes and emoji.
+      // Pure number terms stay a loose substring match so that searching a
+      // phone number by its tail ("333022") still finds "+37441333022".
+      function termMatches(blob, term) {
+        if (/^[0-9+]+$/.test(term)) {
+          return blob.indexOf(term) !== -1;
+        }
+        var from = 0;
+        var idx = blob.indexOf(term);
+        while (idx !== -1) {
+          if (idx === 0 || !/[a-z0-9]/.test(blob.charAt(idx - 1))) {
+            return true;
+          }
+          from = idx + 1;
+          idx = blob.indexOf(term, from);
+        }
+        return false;
+      }
+
       function applyFilters() {
         var q = document
           .getElementById("searchInput")
           .value.trim()
           .toLowerCase();
-        // every whitespace-separated token must appear somewhere in data-search,
+        // every whitespace-separated token must start a word in data-search,
         // so "dentist vardanants" matches a card holding both, in any order
         var terms = q ? q.split(/\s+/) : [];
         var cards = document.querySelectorAll(".card");
@@ -10619,7 +10641,7 @@
           var searchBlob = card.getAttribute("data-search") || "";
           var matchesSearch = true;
           for (var t = 0; t < terms.length; t++) {
-            if (searchBlob.indexOf(terms[t]) === -1) {
+            if (!termMatches(searchBlob, terms[t])) {
               matchesSearch = false;
               break;
             }
