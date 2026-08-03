@@ -1,14 +1,15 @@
 # Licensing
 
 The Vanadzor Index is not one work. The published site is a single page —
-`index.html` — served alongside the masthead artwork. Content, code and
-artwork run through all of it, they came from different places, and they carry
-different terms. This file says which is which.
+`index.html` — served alongside the masthead artwork; behind it sits a
+pipeline that syncs changes back upstream. Content, code and artwork run
+through all of it, they came from different places, and they carry different
+terms. This file says which is which.
 
 | Part | Terms | File |
 | --- | --- | --- |
 | The directory content — the entries and their arrangement | CC BY-NC-SA 4.0 | [`LICENSE`](LICENSE) |
-| The code — page structure, CSS, JavaScript | PolyForm Noncommercial 1.0.0 | [`LICENSE-CODE`](LICENSE-CODE) |
+| The code — page structure, CSS, JavaScript, sync pipeline | PolyForm Noncommercial 1.0.0 | [`LICENSE-CODE`](LICENSE-CODE) |
 | The name, the masthead and the site icon | All rights reserved | this file, below |
 | Map geometry and tiles | © OpenStreetMap contributors, ODbL | this file, below |
 
@@ -80,8 +81,8 @@ licence appear inside the block above rather than as an optional extra.
 Full text, with the Required Notice, in [`LICENSE-CODE`](LICENSE-CODE).
 
 This covers the CSS, the page structure and the JavaScript of
-`index.html` — and the compiled copies of all of that inside any offline
-snapshot saved from it.
+`index.html` and everything under `notion_tables_one-way_bridge/` — and the
+compiled copies of all of that inside any offline snapshot saved from it.
 
 None of it is derived from the upstream databases, so it is licensed
 separately. PolyForm Noncommercial was chosen so
@@ -169,7 +170,23 @@ to cover them.
 
 ---
 
-## 5. Adding new sources later
+## 5. What this index gives back
+
+Work done here is contributed back to the upstream databases. Entries are verified and corrected, new entries are researched and added,
+existing ones are filled out with detail the upstream databases did not
+originally have, and stale data is refreshed.
+
+Every content change is logged in
+[`SOURCE-SYNC.md`](SOURCE-SYNC.md) in the upstream schema and pushed back
+through the pipeline in [`notion_tables_one-way_bridge/`](notion_tables_one-way_bridge/),
+so a change made here can be replayed upstream from the log alone.
+
+Matching licences on both sides are what let corrections flow back without a
+rights negotiation each time.
+
+---
+
+## 6. Adding new sources later
 
 Every additional copyleft source narrows what the index can do, and the
 NonCommercial element is the binding constraint:

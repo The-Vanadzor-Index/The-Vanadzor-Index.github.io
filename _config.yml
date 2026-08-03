@@ -21,3 +21,8 @@ exclude:
   - vanadzor-masthead.psd
   # Notion source exports — reference material, not part of the site.
   - "*.zip"
+  # Upstream sync scripts and their CSVs — tooling, not part of the site.
+  - notion_tables_one-way_bridge
+  # The log of what still has to be replayed upstream — a working file for
+  # whoever runs the sync, not something the site serves.
+  - SOURCE-SYNC.md

@@ -2,8 +2,9 @@ The Vanadzor Index — licence for the code
 =========================================
 
 This licence covers the *code* of The Vanadzor Index only: the CSS, the page
-structure and the JavaScript of index.html — together with the compiled copies
-of those that appear inside any offline snapshot saved from it.
+structure and the JavaScript of index.html and everything under
+notion_tables_one-way_bridge/ — together with the compiled copies of those that
+appear inside any offline snapshot saved from it.
 
 It does NOT cover:
 

@@ -48,6 +48,23 @@ Entries are compiled in collaboration with:
 
 Entries taken from those databases are translated, edited and extended here.
 
+### Giving back
+
+The relationship runs both ways — this index is not a downstream copy that only
+takes. Work done here is returned to the upstream databases:
+
+- **Verifying and correcting** entries whose phone numbers, addresses or hours
+  turned out to be wrong
+- **Adding new entries** found and confirmed independently
+- **Filling out existing entries** with detail the source did not carry — exact
+  coordinates, map links, socials, second phone numbers
+- **Refreshing stale data** as businesses move, change hands or close
+
+Every content change is logged in `SOURCE-SYNC.md` in the upstream schema and
+pushed back through the pipeline in `notion_tables_one-way_bridge/`, so a change
+made here can be replayed in Notion from the log alone. ShareAlike on both sides
+is what makes that possible without a rights negotiation each time.
+
 Map geometry and tiles are © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright),
 licensed [ODbL](https://opendatacommons.org/licenses/odbl/1-0/).
 
@@ -63,7 +80,7 @@ Not one work — three parts, three sets of terms.
 | Part | Terms |
 | --- | --- |
 | **Directory content** — the entries and their arrangement | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — [`LICENSE`](LICENSE) |
-| **Code** — the CSS and page structure, the JavaScript | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) — [`LICENSE-CODE`](LICENSE-CODE) |
+| **Code** — the CSS and page structure, the JavaScript, the sync pipeline | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) — [`LICENSE-CODE`](LICENSE-CODE) |
 | **The name "The Vanadzor Index", the masthead and the site icon** | All rights reserved |
 
 Everything is noncommercial. For commercial use of any part, ask:
