@@ -1,11 +1,22 @@
 #!/usr/bin/env python3
 """Assemble index.html from src/.
 
-index.html is generated. Edit src/index.template.html (everything that is not a
-directory entry) or src/cards/*.html (one file per category), then run:
+index.html is generated. Edit one of
+
+    src/index.template.html   the page itself: <head>, <style>, masthead, footer
+    src/cards/*.html          the directory entries, one file per category
+    src/js/*.js               the behaviour, one file per feature, in name order
+
+then run:
 
     python3 build.py            # rebuild index.html
     python3 build.py --check    # verify index.html is up to date; write nothing
+
+The JS is concatenated back into the single inline <script> block it has always
+been, in filename order -- so the files share one scope exactly as the original
+top-to-bottom block did, and order is load-bearing: 02-filtering.js defines the
+applyFilters() that 03-chips.js calls. Sources are stored unindented and the
+build re-indents them to sit inside the <script> tag.
 
 The entry counts that used to be maintained by hand -- each category's
 <span class="cat-count">, the masthead stamp, and the two meta descriptions --
@@ -26,9 +37,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 TEMPLATE = ROOT / "src" / "index.template.html"
 CARDS_DIR = ROOT / "src" / "cards"
+JS_DIR = ROOT / "src" / "js"
 OUTPUT = ROOT / "index.html"
 
-PLACEHOLDER = "      <!-- @@CARDS@@ -->\n"
+CARDS_SLOT = "      <!-- @@CARDS@@ -->\n"
+SCRIPT_SLOT = "      <!-- @@SCRIPT@@ -->\n"
+SCRIPT_INDENT = "      "
 
 # A directory entry is a .card element. It carries a second class when it is a
 # personal contact hidden by default, so match the class list, not the string.
@@ -43,6 +57,34 @@ class BuildError(Exception):
 def card_count(markup):
     """Real entries in a chunk of markup: .card elements less cross-references."""
     return len(CARD_RE.findall(markup)) - markup.count(DUPLICATE_MARK)
+
+
+def read_script():
+    """The JS modules, in filename order, re-indented to sit inside <script>.
+
+    They are concatenated into one block, so they go on sharing a single scope
+    -- which is what lets 03-chips.js call applyFilters() out of 02-filtering.js
+    and what makes filename order part of the contract.
+    """
+    paths = sorted(JS_DIR.glob("*.js"))
+    if not paths:
+        raise BuildError(f"no JS modules in {JS_DIR}")
+
+    modules = []
+    for path in paths:
+        body = path.read_text(encoding="utf-8")
+        if not body.endswith("\n"):
+            raise BuildError(f"{path.name}: must end with a newline")
+        # Prepend the indent to every line that has content; a blank line stays
+        # genuinely empty rather than becoming six spaces of trailing space.
+        lines = [
+            SCRIPT_INDENT + line if line.strip() else ""
+            for line in body.rstrip("\n").split("\n")
+        ]
+        modules.append("\n".join(lines))
+    # One blank line between modules, matching how the block was spaced when it
+    # was written out longhand.
+    return "\n\n".join(modules) + "\n"
 
 
 def read_sections():
@@ -157,8 +199,9 @@ def apply_total(template, total):
 
 def build(write=True):
     template = TEMPLATE.read_text(encoding="utf-8")
-    if PLACEHOLDER not in template:
-        raise BuildError(f"{TEMPLATE.name} has no {PLACEHOLDER.strip()} line")
+    for slot in (CARDS_SLOT, SCRIPT_SLOT):
+        if slot not in template:
+            raise BuildError(f"{TEMPLATE.name} has no {slot.strip()} line")
 
     sections = read_sections()
     for section in sections:
@@ -169,7 +212,11 @@ def build(write=True):
     total = sum(s["count"] for s in sections)
 
     body = "".join(s["markup"] for s in sections)
-    document = apply_total(template, total).replace(PLACEHOLDER, body)
+    document = (
+        apply_total(template, total)
+        .replace(CARDS_SLOT, body)
+        .replace(SCRIPT_SLOT, read_script())
+    )
     return document, sections, total, restamped
 
 

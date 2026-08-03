@@ -81,10 +81,10 @@ licence appear inside the block above rather than as an optional extra.
 **Licensed under [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0).**
 Full text, with the Required Notice, in [`LICENSE-CODE`](LICENSE-CODE).
 
-This covers `build.py`, everything under `notion_tables_one-way_bridge/`,
-and the CSS, page structure and JavaScript in `src/index.template.html` — and
-the compiled copies of all of that inside the built `index.html` and inside
-any offline snapshot saved from it.
+This covers `build.py`, everything under `src/js/` and
+`notion_tables_one-way_bridge/`, and the CSS and page structure in
+`src/index.template.html` — and the compiled copies of all of that inside the
+built `index.html` and inside any offline snapshot saved from it.
 
 None of it is derived from the upstream databases, so it is licensed
 separately. PolyForm Noncommercial was chosen so
@@ -106,7 +106,7 @@ does not simply inherit the content licence.
 The published `index.html` is generated: `build.py` concatenates the sources
 under `src/` into a single document. Content and code end up interleaved in
 that page, but they are not thereby one work — `src/cards/` is the content and
-`src/index.template.html` is the code, and that split is the
+`src/js/`, `src/index.template.html` are the code, and that split is the
 authoritative statement of the boundary. **When the two licences need to be
 told apart, `src/` is the canonical form.**
 

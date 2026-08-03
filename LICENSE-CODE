@@ -2,7 +2,7 @@ The Vanadzor Index — licence for the code
 =========================================
 
 This licence covers the *code* of The Vanadzor Index only: build.py, everything
-under notion_tables_one-way_bridge/, and the CSS, page structure and JavaScript
+under src/js/ and notion_tables_one-way_bridge/, and the CSS and page structure
 in src/index.template.html — together with the compiled copies of those files
 that appear inside the built index.html and inside any offline snapshot saved
 from it.
