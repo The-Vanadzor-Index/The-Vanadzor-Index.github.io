@@ -81,7 +81,7 @@ Not one work — three parts, three sets of terms.
 | --- | --- |
 | **Directory content** — the entries and their arrangement | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — [`LICENSE`](LICENSE) |
 | **Code** — the CSS and page structure, the JavaScript, the sync pipeline | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) — [`LICENSE-CODE`](LICENSE-CODE) |
-| **The name "The Vanadzor Index", the masthead and the site icon** | All rights reserved |
+| **The name "The Vanadzor Index", the masthead and the pomegranate mark** | All rights reserved |
 
 Everything is noncommercial. For commercial use of any part, ask:
 <kocharyan.armen@protonmail.com>.

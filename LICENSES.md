@@ -1,16 +1,16 @@
 # Licensing
 
 The Vanadzor Index is not one work. The published site is a single page —
-`index.html` — served alongside the masthead artwork; behind it sits a
-pipeline that syncs changes back upstream. Content, code and artwork run
-through all of it, they came from different places, and they carry different
-terms. This file says which is which.
+`index.html` — served alongside the icon set and the masthead artwork; behind
+it sits a pipeline that syncs changes back upstream. Content, code and artwork
+run through all of it, they came from different places, and they carry
+different terms. This file says which is which.
 
 | Part | Terms | File |
 | --- | --- | --- |
 | The directory content — the entries and their arrangement | CC BY-NC-SA 4.0 | [`LICENSE`](LICENSE) |
 | The code — page structure, CSS, JavaScript, sync pipeline | PolyForm Noncommercial 1.0.0 | [`LICENSE-CODE`](LICENSE-CODE) |
-| The name, the masthead and the site icon | All rights reserved | this file, below |
+| The name, the masthead and the pomegranate mark | All rights reserved | this file, below |
 | Map geometry and tiles | © OpenStreetMap contributors, ODbL | this file, below |
 
 Everything here is noncommercial. If you want to use any part of the index
@@ -112,14 +112,16 @@ sets of terms.
   transliteration, and in any translation, rendering or close variant of it,
   whether or not that form has ever been used here
 - the masthead artwork — `vanadzor-masthead.psd`, `vanadzor-masthead.jpg`
-- the site icon — the inline SVG favicon in `index.html`
+- the pomegranate mark, `favicon.ico`, and the icon set under
+  `favicon_assets/` — including the sources in `favicon_assets/favicon_src/`
 
-The masthead ships as a published file in its own right — `vanadzor-masthead.jpg` is
-served by the site alongside `index.html`. Being served with the page grants
-no licence to it.
+Four of these ship as published files in their own right —
+`vanadzor-masthead.jpg`, `favicon.ico` and the three PNGs under
+`favicon_assets/` are served by the site alongside `index.html`. Being served
+with the page grants no licence to them.
 
 Section 2(b)(2) of CC BY-NC-SA 4.0 says plainly that trademark rights are not
-licensed by it, and the masthead and the icon are original artwork that no
+licensed by it, and the masthead and icons are original artwork that no
 upstream obligation touches. Nothing in either licence above grants any right
 to use these.
 

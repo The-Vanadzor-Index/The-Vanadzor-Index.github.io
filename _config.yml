@@ -19,6 +19,9 @@ exclude:
   - LICENSE-CODE
   - LICENSES.md
   - vanadzor-masthead.psd
+  # Icon artwork — the rasterized icons in favicon_assets/ are what the site
+  # serves; the nested favicon_src/ (sources) is reference material only.
+  - favicon_assets/favicon_src
   # Notion source exports — reference material, not part of the site.
   - "*.zip"
   # Upstream sync scripts and their CSVs — tooling, not part of the site.

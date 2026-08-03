@@ -15,10 +15,43 @@
     </script>
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>The Vanadzor Index - Compiled &amp; Cross-Referenced</title>
+    <!--
+      The icons. The SVG is inlined rather than linked because it is the only
+      one an offline snapshot can keep — a saved copy sits alone in a downloads
+      folder with nothing beside it to resolve the files below against, so the
+      snapshot drops those links and keeps this. Its "V" is Georgia Bold's
+      outline, not a <text> element, so the icon does not need Georgia installed
+      to come out the right shape. The .ico is for anything that asks for
+      /favicon.ico without reading the markup at all, which is why it alone
+      stays at the domain root — favicon_assets/ holds the rest. Sources and
+      the reasoning behind the three separate drawings:
+      favicon_assets/favicon_src/README.md.
+    -->
+    <link rel="icon" sizes="32x32" href="favicon.ico" data-site-icon />
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHJ4PSI2IiBmaWxsPSIjZjRlZmUyIiBzdHJva2U9IiMyMzI5MWYiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSIxOCIgaGVpZ2h0PSI1NiIgcng9IjAiIGZpbGw9IiNjZGJkOTUiIG9wYWNpdHk9IjAuNTUiLz4KICA8bGluZSB4MT0iMjIiIHkxPSI0IiB4Mj0iMjIiIHkyPSI2MCIgc3Ryb2tlPSIjYTg5NjZhIiBzdHJva2Utd2lkdGg9IjEuNSIvPgogIDx0ZXh0IHg9IjQxIiB5PSI0MiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9Ikdlb3JnaWEsICdQYWxhdGlubyBMaW5vdHlwZScsIHNlcmlmIgogICAgICAgIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMzAiIGZpbGw9IiMzYzUyNDAiPlY8L3RleHQ+CiAgPGNpcmNsZSBjeD0iMTMiIGN5PSIxNiIgcj0iMi42IiBmaWxsPSIjYTg0NTFmIi8+Cjwvc3ZnPgo="
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8Y2xpcFBhdGggaWQ9InBhZ2UiPjxyZWN0IHg9IjUiIHk9IjUiIHdpZHRoPSI1NCIgaGVpZ2h0PSI1NCIgcng9IjUiLz48L2NsaXBQYXRoPgogIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI1NiIgaGVpZ2h0PSI1NiIgcng9IjYiIGZpbGw9IiNmNGVmZTIiIHN0cm9rZT0iIzIzMjkxZiIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGcgY2xpcC1wYXRoPSJ1cmwoI3BhZ2UpIj4KICAgIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSIxOCIgaGVpZ2h0PSI1NiIgZmlsbD0iI2NkYmQ5NSIgb3BhY2l0eT0iMC41NSIvPgogICAgPGxpbmUgeDE9IjIyIiB5MT0iNCIgeDI9IjIyIiB5Mj0iNjAiIHN0cm9rZT0iI2E4OTY2YSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz4KICA8L2c+CiAgPHBhdGggZmlsbD0iIzNjNTI0MCIgZD0iTTUzLjAzNCAyMi4zODZRNTIuNTUgMjIuNDMgNTIuMTExIDIyLjU2MlE1MS42NzEgMjIuNjkzIDUxLjIwMyAyMi45NzJRNTAuNTczIDIzLjMzOCA1MC4yMjkgMjMuNzU1UTQ5Ljg4NCAyNC4xNzMgNDkuNTQ3IDI0LjkwNVE0OS4wOTMgMjUuOTE2IDQ4LjI3MyAyNy44NTdRNDcuNDUzIDI5Ljc5OCA0Ni4zOTggMzIuMjczUTQ1LjQ2IDM0LjUgNDQuMzY5IDM3LjE1MVE0My4yNzggMzkuODAzIDQyLjI4MiA0Mi4yMzRIMzkuMzM3UTM3LjI4NyAzNy4yMSAzNS4xNjMgMzIuMDI0UTMzLjAzOSAyNi44MzkgMzIuMTc0IDI0LjgxN1EzMS44MzcgMjQuMDg1IDMxLjUyMiAyMy43MTFRMzEuMjA4IDIzLjMzOCAzMC41MTkgMjIuOTQyUTMwLjAyMSAyMi42NjQgMjkuNjQgMjIuNTU0UTI5LjI1OSAyMi40NDQgMjguNjI5IDIyLjM1NlYyMS4yMTRIMzkuODk0VjIyLjMyN1EzOC4zMTIgMjIuNTE4IDM3Ljc0OCAyMi43M1EzNy4xODQgMjIuOTQyIDM3LjE4NCAyMy4yNjVRMzcuMTg0IDIzLjQyNiAzNy4yMzUgMjMuNjA5UTM3LjI4NyAyMy43OTIgMzcuMzg5IDI0LjFRMzcuODU4IDI1LjM4OSAzOS4wODggMjguMzExUTQwLjMxOSAzMS4yMzMgNDIuNzM2IDM3LjIyNVE0NC4yMTUgMzMuNTc3IDQ1LjE5NyAzMS4wNThRNDYuMTc4IDI4LjUzOCA0Ni45MjUgMjYuNjA0UTQ3LjI5MiAyNS42NjcgNDcuNTMzIDI0Ljg1NFE0Ny43NzUgMjQuMDQxIDQ3Ljc3NSAyMy42MzFRNDcuNzc1IDIzLjE2MiA0Ny4xMDEgMjIuODQ3UTQ2LjQyNyAyMi41MzIgNDQuNjExIDIyLjM4NlYyMS4yMTRINTMuMDM0WiIvPgogIDxjaXJjbGUgY3g9IjEzIiBjeT0iMTYiIHI9IjIuNiIgZmlsbD0iI2E4NDUxZiIvPgo8L3N2Zz4K"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="favicon_assets/icon-192.png"
+      data-site-icon
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="favicon_assets/icon-512.png"
+      data-site-icon
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="favicon_assets/apple-touch-icon.png"
+      data-site-icon
     />
     <meta property="og:url" content="https://the-vanadzor-index.github.io/" />
     <meta property="og:type" content="website" />
@@ -11625,7 +11658,7 @@
       </div>
       <!-- Three different sets of terms meet in this page: content, code, and
            the name/artwork that neither licence covers — the last of which
-           also ships as the masthead and icon served beside it.
+           also ships as the masthead and icon files served beside it.
            LICENSES.md is the map; this is the short form of it. -->
       <div class="credit credit-license">
         Directory content licensed
@@ -11642,7 +11675,7 @@
           >PolyForm Noncommercial 1.0.0</a
         >
         <br />
-        “The Vanadzor Index”, the masthead and the site icon are
+        “The Vanadzor Index”, the masthead and the pomegranate mark are
         reserved and covered by neither.
         <br />
         <a
@@ -12180,6 +12213,16 @@
             var cloneHints = clone.querySelectorAll('link[rel="preconnect"]');
             for (var w = 0; w < cloneHints.length; w++) {
               cloneHints[w].parentNode.removeChild(cloneHints[w]);
+            }
+
+            // The .ico and PNG icons are separate files on the site, and a
+            // saved copy has none of them beside it — those links would
+            // resolve against the downloads folder and find nothing. The
+            // inline SVG icon carries no such dependency and is left alone,
+            // so the snapshot keeps its icon and asks for nothing.
+            var cloneIcons = clone.querySelectorAll("link[data-site-icon]");
+            for (var x = 0; x < cloneIcons.length; x++) {
+              cloneIcons[x].parentNode.removeChild(cloneIcons[x]);
             }
 
             // Reset the arrow buttons to their initial disabled/enabled state.
