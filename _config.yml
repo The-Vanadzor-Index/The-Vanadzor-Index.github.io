@@ -1,12 +1,12 @@
 title: The Vanadzor Index
 description: >-
-  A single-file, offline-friendly local directory for Vanadzor, Armenia —
+  An offline-friendly local directory for Vanadzor, Armenia —
   doctors, government services, taxis, repair services, restaurants, hotels,
   and things to do, all in one searchable page.
 lang: en
 
-# This site is one self-contained HTML file with no Jekyll templating,
-# so no theme or plugins are needed — GitHub Pages just serves it as-is.
+# index.html is built from src/ by build.py and served as-is, with no Jekyll
+# templating to apply — so no theme or plugins are needed.
 theme: null
 plugins: []
 
@@ -29,3 +29,7 @@ exclude:
   # The log of what still has to be replayed upstream — a working file for
   # whoever runs the sync, not something the site serves.
   - SOURCE-SYNC.md
+  # Sources for index.html and the script that assembles them. The built
+  # index.html is what gets served; these are the files it is built from.
+  - src
+  - build.py

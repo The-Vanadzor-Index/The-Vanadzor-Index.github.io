@@ -1,6 +1,6 @@
 # The Vanadzor Index
 
-A single-file, offline-friendly local directory for **Vanadzor, Armenia** — doctors, government services, taxis, repair services, restaurants, hotels, and things to do, all in one searchable page.
+An offline-friendly local directory for **Vanadzor, Armenia** — doctors, government services, taxis, repair services, restaurants, hotels, and things to do, all in one searchable page.
 
 Built for volunteers, newcomers, and long-time residents who need a quick, no-nonsense way to find a phone number, a map link, or a place to eat, without digging through scattered group chats and notion pages.
 
@@ -12,7 +12,7 @@ Built for volunteers, newcomers, and long-time residents who need a quick, no-no
 - **Personal contacts toggle** — hide individuals' personal numbers by default, show them only when needed
 - **Light / dark theme**, following system preference or manual override
 - **Offline download** — save a self-contained snapshot of the whole directory as a single HTML file, no internet required to use it later
-- **No build step, no dependencies** — it's one HTML file with inline CSS and vanilla JS
+- **No dependencies, nothing to resolve at load time** — the published page is one HTML file with inline CSS and vanilla JS, assembled from per-category sources by a stdlib-only build script
 
 ## Categories
 
@@ -26,19 +26,37 @@ Built for volunteers, newcomers, and long-time residents who need a quick, no-no
 
 ## Usage
 
-This is a static, single-file website — no server or build process required.
+The published site is static — `index.html`, served with its icon set and masthead artwork. No server, framework or package manager is involved at any point.
 
 - **Open locally:** download `The_Vanadzor_Index-vX.X.html` and open it in any browser.
 - **Save an offline copy:** use the "Download the index for offline use" button at the bottom of the page to save a snapshot for use without internet access. Offline copies are timestamped and won't receive future updates.
 
+## Project layout
+
+`index.html` is generated — **don't edit it by hand**, the next build overwrites it. `build.py` (stdlib-only Python, nothing to install) assembles it from:
+
+```
+src/index.template.html    the page shell: <head>, styles, masthead, footer
+src/cards/<n>-<slug>.html  one file per category
+src/js/<nn>-<feature>.js   the behaviour, one file per feature
+```
+
+```bash
+python3 build.py           # rebuild index.html from src/
+python3 build.py --check   # verify index.html is current; exits 1 if stale
+```
+
+The split keeps a card edit inside a small file instead of an 8,500-line block, and lets the entry counts be computed rather than maintained by hand. It is a plain concatenation into one document — nothing is fetched, included or resolved at runtime, and the offline snapshot is unaffected.
+
 ## Updating entries
 
-All content lives directly in the HTML as `.card` elements grouped into `.subgroup` and `.category` sections. To add or edit an entry:
+Entries are `.card` elements grouped into `.subgroup` and `.category` sections, living in `src/cards/` — one file per category. To add or edit one:
 
-1. Find the relevant category/subgroup.
+1. Open the category's file in `src/cards/`.
 2. Copy an existing `.card` block as a template.
 3. Fill in the name, address, phone, map link, and any social links.
 4. Update the `data-search` attribute so the entry stays searchable.
+5. Run `python3 build.py`.
 
 ## Sources & attribution
 
@@ -80,7 +98,7 @@ Not one work — three parts, three sets of terms.
 | Part | Terms |
 | --- | --- |
 | **Directory content** — the entries and their arrangement | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) — [`LICENSE`](LICENSE) |
-| **Code** — the CSS and page structure, the JavaScript, the sync pipeline | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) — [`LICENSE-CODE`](LICENSE-CODE) |
+| **Code** — `build.py`, `src/js/`, the CSS and page structure, the sync pipeline | [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) — [`LICENSE-CODE`](LICENSE-CODE) |
 | **The name "The Vanadzor Index", the masthead and the pomegranate mark** | All rights reserved |
 
 Everything is noncommercial. For commercial use of any part, ask:

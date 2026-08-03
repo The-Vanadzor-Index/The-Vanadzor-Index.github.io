@@ -1,15 +1,16 @@
 # Licensing
 
-The Vanadzor Index is not one work. The published site is a single page —
+The Vanadzor Index is not one work. The published site is a built page —
 `index.html` — served alongside the icon set and the masthead artwork; behind
-it sits a pipeline that syncs changes back upstream. Content, code and artwork
-run through all of it, they came from different places, and they carry
-different terms. This file says which is which.
+it sit a source tree, a build script, and a pipeline that syncs changes back
+upstream. Content, code and artwork run through all of it, they came from
+different places, and they carry different terms. This file says which is
+which.
 
 | Part | Terms | File |
 | --- | --- | --- |
 | The directory content — the entries and their arrangement | CC BY-NC-SA 4.0 | [`LICENSE`](LICENSE) |
-| The code — page structure, CSS, JavaScript, sync pipeline | PolyForm Noncommercial 1.0.0 | [`LICENSE-CODE`](LICENSE-CODE) |
+| The code — build, page structure, CSS, JavaScript, sync pipeline | PolyForm Noncommercial 1.0.0 | [`LICENSE-CODE`](LICENSE-CODE) |
 | The name, the masthead and the pomegranate mark | All rights reserved | this file, below |
 | Map geometry and tiles | © OpenStreetMap contributors, ODbL | this file, below |
 
@@ -80,9 +81,10 @@ licence appear inside the block above rather than as an optional extra.
 **Licensed under [PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0).**
 Full text, with the Required Notice, in [`LICENSE-CODE`](LICENSE-CODE).
 
-This covers the CSS, the page structure and the JavaScript of
-`index.html` and everything under `notion_tables_one-way_bridge/` — and the
-compiled copies of all of that inside any offline snapshot saved from it.
+This covers `build.py`, everything under `notion_tables_one-way_bridge/`,
+and the CSS, page structure and JavaScript in `src/index.template.html` — and
+the compiled copies of all of that inside the built `index.html` and inside
+any offline snapshot saved from it.
 
 None of it is derived from the upstream databases, so it is licensed
 separately. PolyForm Noncommercial was chosen so
@@ -98,6 +100,15 @@ page.
 
 Creative Commons licences are not designed for software, which is why the code
 does not simply inherit the content licence.
+
+### Where the boundary falls inside the built page
+
+The published `index.html` is generated: `build.py` concatenates the sources
+under `src/` into a single document. Content and code end up interleaved in
+that page, but they are not thereby one work — `src/cards/` is the content and
+`src/index.template.html` is the code, and that split is the
+authoritative statement of the boundary. **When the two licences need to be
+told apart, `src/` is the canonical form.**
 
 Offline snapshots saved through the download button contain both, under both
 sets of terms.
