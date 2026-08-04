@@ -1793,33 +1793,37 @@
       }
       /* In the page a card answers the pointer because it is one of a grid
          of them and the reader is still choosing; here it is the one entry
-         they have already picked, stood over its own marker, so the lift,
-         the tinted address row and the reddening links would all be an
-         invitation to press something that has nothing left to open. The
-         pointer stays an arrow for the same reason: the card is text to be
-         read, and what genuinely still leads somewhere — the two buttons
-         beneath it and the close — carries its own hand. The links keep
-         working, and so does tap-to-copy on the address; they just stop
-         advertising. */
+         they have already picked, stood over its own marker, so the lift
+         would be an invitation to press a card that has nothing left to
+         open, and the body of it is text to be read under an arrow.
+
+         The rows that do something are the exception, and were wrongly
+         caught by that at first. A phone number and a social account lead
+         somewhere from here exactly as they do from the page — openPopup
+         takes the one link that wouldn't, the map link that would reopen
+         this panel. The address row still copies itself on a tap, as
+         everywhere else in the index. Both keep the affordance that says
+         so: the hand, the reddening link, the tinted address. Stripped of
+         it, the address row looked like the one place in the index where
+         tapping an address did nothing — and the toast that would have
+         said otherwise was itself sitting under the panel's scrim (see
+         .copy-toast). */
       .mapview-pop .card,
       .mapview-pop .card * {
         cursor: default;
       }
+      /* The descendants too: the blanket above reaches every one of them,
+         so a row alone would keep the arrow over the very span the reader
+         is pointing at. */
+      .mapview-pop .card a,
+      .mapview-pop .card a *,
+      .mapview-pop .card .card-row.addr-copy,
+      .mapview-pop .card .card-row.addr-copy * {
+        cursor: pointer;
+      }
       .mapview-pop .card:hover {
         transform: none;
         box-shadow: none;
-      }
-      .mapview-pop .card a:hover {
-        color: var(--pine-deep);
-        border-bottom-color: var(--kraft);
-      }
-      .mapview-pop .card .card-row.addr-copy:hover > span:not(.glyph) {
-        color: inherit;
-        background: none;
-        box-shadow: none;
-      }
-      .mapview-pop .card .card-row.addr-copy:hover > .glyph {
-        color: var(--pine);
       }
       /* The head's two ways out, repeated at the card. Stood over its
          marker the card is what the reader is looking at, and the head is
