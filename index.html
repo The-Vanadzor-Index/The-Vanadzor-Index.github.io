@@ -13377,18 +13377,24 @@
           // The gatherings depend on what is selected, so this may rebuild
           // them; layoutSpots decides, and does nothing if nothing changed.
           layoutSpots();
+          // The invitation stands or stands down with the selection — unless
+          // a message has borrowed the line, which will hand it back here on
+          // its own and pick up whatever the selection is by then.
+          if (!hintTimer) hintDefault();
         }
+        // Reached only when the reader picks the entry themselves — from its
+        // pin, or from its dot among the rest of the index. Opening the panel
+        // sets the selection directly instead, so the invitation below is
+        // still standing for someone who has done nothing yet.
         function selectEntry() {
           sel = "entry";
+          hintDone();
           showSelection();
         }
         function selectPoint(lat, lon) {
           pick = { lat: lat, lon: lon, name: "", addr: "" };
           sel = "pick";
-          if (!hintSeen) {
-            hintSeen = true;
-            hintEl.className = "mapview-hint is-off";
-          }
+          hintDone();
           placePin(pickPin, pick);
           showSelection();
           lookup(pick);
@@ -14120,12 +14126,25 @@
            One line, used for the standing invitation to tap and for
            whatever the locate button has to report back. A message borrows
            it for a few seconds and then hands it back to whichever state
-           the invitation was in. */
+           the invitation was in.
+
+           The invitation is only worth making while nothing is picked. Opened
+           from a card the panel arrives with the entry already selected — its
+           name in the head, both ways out aimed at it — so a line telling the
+           reader to pick something is talking over an answer already given,
+           and it was doing exactly that on every first open. It is equally
+           spent once the reader picks anything themselves, a marker as much
+           as a bare point, and that is what hintSeen remembers: without it
+           the line would come back every time a selection was cleared, for a
+           reader who has plainly understood it. */
         function hintDefault() {
           hintEl.textContent = IS_TOUCH
             ? "Tap the map to pick a point"
             : "Click the map to pick a point";
-          hintEl.className = "mapview-hint" + (hintSeen ? " is-off" : "");
+          hintEl.className = "mapview-hint" + (hintSeen || sel ? " is-off" : "");
+        }
+        function hintDone() {
+          hintSeen = true;
         }
         function flash(text) {
           clearTimeout(hintTimer);
@@ -15176,6 +15195,10 @@
           placePin(pickPin, null);
           placeMe();
           clearTimeout(hintTimer);
+          // Cleared as well as stopped: a pending message left named here
+          // would make every later hintDefault think the line was still
+          // borrowed, and the invitation would never be drawn again.
+          hintTimer = null;
           hintDefault();
           closeConfirm();
           note.style.display = "";
