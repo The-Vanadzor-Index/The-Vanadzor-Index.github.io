@@ -63,8 +63,53 @@ Synced: no
 
 ## 2026-08-01
 
+### Added — Александр — химчистка мебели, матрасов, автомобильных сидений (Контакты и база знаний)
+Synced: yes (2026-08-04)
+
+Professional deep dry cleaning of upholstered furniture (sofas, armchairs, chairs), mattresses,
+and textile car seats. A master relocated from Saint Petersburg, now working in Armenia; contact
+is over Telegram only, price quoted from photos. Source: his Telegram announcement post.
+
+- Заголовок: Александр — химчистка мебели, матрасов, автомобильных сидений
+- Категория: Мастера и услуги
+- Подкатегория: Клининг
+- Ссылка: https://t.me/divanvesna
+
+The before/after portfolio channel `https://t.me/divanlcean` is on the site card as a second link,
+but the database has a single `Ссылка` column, so it has nowhere to go upstream.
+
+### Added — Lumo by Salori (Контакты и база знаний)
+Synced: yes (2026-08-04)
+
+Added as a site card; the row already existed upstream, so this created nothing — only the
+missing phone number was filled in.
+
+- Заголовок: Lumo by Salori
+- Категория: Еда
+- Подкатегория: Кафе
+- Адрес: https://yandex.com/maps/org/lumo_by_salori/203623324666
+- Телефон: (пусто) → +37477444049
+- Ссылка: https://www.instagram.com/lumobysalori
+
+The site card also carries the street address `Azatamartikner St. 10`, which is still blank in
+the upstream `Адрес текстом` column — a correction worth making on a later run.
+
+### Added — Bar B.Q. (Контакты и база знаний)
+Synced: yes (2026-08-04)
+
+Added as a site card; the row already existed upstream, so this created nothing — only the
+missing address fields were filled in.
+
+- Заголовок: Bar B.Q.
+- Категория: Еда
+- Подкатегория: Кафе, Фастфуд
+- Адрес: (пусто) → https://yandex.com/maps/org/bar_b_q_vanadzor/171378021289
+- Адрес текстом: (пусто) → Тигран Мец, 36
+- Телефон: +37441333022
+- Ссылка: https://www.instagram.com/barbq.evn
+
 ### Edited — Dr. Sara — массаж, косметология (Контакты и база знаний)
-Synced: no
+Synced: yes (2026-08-04)
 
 The row existed with nothing but a map link. Details taken from the organisation's
 Yandex Maps page.
