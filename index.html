@@ -1213,12 +1213,18 @@
          carries no hover affordance at all, so this pill is the only signal
          a tap did anything. Injected by script on first copy; it never
          exists without JS. Sits bottom-centre, clear of the back-to-top
-         button. */
+         button.
+
+         Above the map panel (z-index 40), because the addresses on the
+         cards standing over the markers copy themselves too — at 30 the
+         pill was drawn under the scrim, so the one signal that the tap
+         had worked was invisible in the one place the reader could not
+         fall back on the row's own hover. */
       .copy-toast {
         position: fixed;
         left: 50%;
         bottom: 1.6rem;
-        z-index: 30;
+        z-index: 50;
         max-width: calc(100vw - 2rem);
         font-family: "Courier New", monospace;
         font-size: 0.72rem;
