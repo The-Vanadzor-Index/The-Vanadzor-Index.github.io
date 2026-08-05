@@ -120,6 +120,7 @@
         --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
         --t-fast: 0.14s;
         --t-mid: 0.22s;
+        --t-fold-lead: 0.08s;
 
         /* Painted through a mask so it takes currentColor and follows the
            theme; the stroke colour inside the data URI is never seen. */
@@ -634,6 +635,27 @@
         left: 0;
         width: 1px;
         height: 1px;
+        pointer-events: none;
+      }
+      /* Marks the opposite edge from .to-top-sentinel: the top of the
+         directory, right where .controls sits before it has anything to
+         stick to. Watched so the personal-toggle can fold away once this
+         has scrolled out of view and return once it's back — see
+         .personal-toggle-wrap.toggle-folded below. Given real height
+         rather than the usual 1px hairline: the script reads this
+         sentinel's intersection *ratio*, folding only once it's fully
+         scrolled past and unfolding only once it's fully back, so the
+         whole height of it is a dead zone the reader has to cross before
+         anything flips. A hairline sentinel gave the toggle nothing to
+         rest on — elastic overscroll at the very top bounces scrollY by a
+         few px on its own, which was enough to cross a 1px line back and
+         forth several times a second. */
+      .toggle-top-sentinel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1px;
+        height: 56px;
         pointer-events: none;
       }
       /* The bar floats over the directory rather than sitting on an opaque
@@ -1279,6 +1301,11 @@
         line-height: 1.55;
         color: var(--muted);
         opacity: 0.85;
+        cursor: pointer;
+      }
+      .hidden-subcats-notice:hover {
+        opacity: 1;
+        text-decoration: underline;
       }
       .hidden-subcats-notice.visible {
         display: block;
@@ -1287,31 +1314,124 @@
         font-style: italic;
       }
 
+      /* Points the reader back at the control the notice above names —
+         a ring that blooms and fades around the pill, since the toggle
+         itself never moves or changes state to draw the eye on its own. */
+      .personal-toggle-wrap.toggle-flash {
+        animation: togglePillFlash 1.2s var(--ease) 1;
+      }
+      @keyframes togglePillFlash {
+        0% {
+          box-shadow: 0 0 0 0 var(--pine);
+        }
+        60% {
+          box-shadow: 0 0 0 10px transparent;
+        }
+        100% {
+          box-shadow: 0 0 0 0 transparent;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .personal-toggle-wrap.toggle-flash {
+          animation: none;
+          box-shadow: 0 0 0 3px var(--pine);
+        }
+      }
+
+      /* Search box and the personal-contacts chip as one row: flex-wrap
+         puts the chip beside the search box whenever both fit at their
+         natural width, and drops it to a centred second line once they
+         don't — no breakpoint needed, the wrap does the work. */
+      .search-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        width: 100%;
+      }
+      .search-row .search-wrap {
+        flex: 1 1 320px;
+        min-width: 0;
+        margin: 0;
+      }
+      /* Cut from the same cloth as .chip — tinted pill, mono caps-free
+         label — so it reads as a filter alongside the category chips
+         rather than as a settings control that wandered into the bar. */
       .personal-toggle-wrap {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 0.65rem;
-        width: fit-content;
-        max-width: calc(100vw - 3rem);
-        margin: 0 auto 2rem;
-        padding: 0.4rem 1.5rem;
+        flex-shrink: 0;
+        gap: 0.55rem;
+        max-height: 48px;
+        padding: 0.4rem 0.9rem 0.4rem 0.75rem;
+        background: var(--tint-pine);
+        border: 1px solid transparent;
         border-radius: var(--r-pill);
         cursor: pointer;
         font-family: var(--mono);
         font-size: 0.7rem;
+        font-weight: 500;
         letter-spacing: 0.02em;
-        color: var(--muted);
-        transition: color var(--t-fast) var(--ease);
+        color: var(--muted-strong);
+        white-space: nowrap;
+        overflow: hidden;
+        transform: scale(1);
+        /* This list (not .toggle-folded's own, below) is what's in effect
+           while the pill is growing back in: opacity starts right away,
+           but transform/max-height/padding wait out --t-fold-lead first,
+           so the pill has already faded in some before overflow:hidden
+           starts letting more of its (still clipped) height show. Skip
+           that lead-in and the reveal reads as a sharp-edged wipe sliding
+           up over solid text, rather than a fade. Folding away runs
+           un-delayed — see .toggle-folded — since nothing needs easing
+           into a clip that's on its way to invisible anyway. */
+        transition:
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          opacity var(--t-mid) var(--ease),
+          transform var(--t-mid) var(--ease) var(--t-fold-lead),
+          max-height var(--t-mid) var(--ease) var(--t-fold-lead),
+          padding var(--t-mid) var(--ease) var(--t-fold-lead);
       }
       .personal-toggle-wrap:hover {
-        color: var(--muted-strong);
+        border-color: var(--pine);
+        color: var(--ink);
+      }
+      .personal-toggle-wrap.active {
+        border-color: var(--pine);
+        color: var(--ink);
+      }
+      /* Only ever set once the toggle has already dropped to its own line
+         below the search box (see .search-row above) — script measures
+         that, not viewport width, since the wrap point is content-driven
+         and has no fixed breakpoint. Shrinking it to nothing rather than
+         hiding it in place is what gives the search box that line back
+         while the reader is scrolled into the entries; padding and
+         max-height collapse together with the fade and scale so the pill
+         reads as folding away rather than just vanishing. pointer-events
+         drops immediately (it isn't something a transition can ease) so a
+         fading pill can't still be tapped mid-animation. */
+      .personal-toggle-wrap.toggle-folded {
+        transition:
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          opacity var(--t-mid) var(--ease),
+          transform var(--t-mid) var(--ease),
+          max-height var(--t-mid) var(--ease),
+          padding var(--t-mid) var(--ease);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+        transform: scale(0.82);
+        pointer-events: none;
       }
       .switch {
         position: relative;
         display: inline-block;
-        width: 38px;
-        height: 22px;
+        width: 32px;
+        height: 19px;
         flex-shrink: 0;
       }
       .switch input {
@@ -1333,8 +1453,8 @@
       .switch-track::before {
         content: "";
         position: absolute;
-        width: 16px;
-        height: 16px;
+        width: 13px;
+        height: 13px;
         left: 2px;
         top: 2px;
         background: var(--paper-card);
@@ -1347,7 +1467,7 @@
         border-color: var(--pine);
       }
       .switch input:checked + .switch-track::before {
-        transform: translateX(16px);
+        transform: translateX(13px);
       }
       /* The input itself is a zero-size box behind the track, so the ring
          has to be moved onto the thing the reader can actually see. */
@@ -3055,14 +3175,29 @@
          is what releases it at the About section and re-pins it on the way
          back up — no scroll listener involved. -->
     <div class="directory">
+    <div aria-hidden="true" class="toggle-top-sentinel"></div>
     <div class="controls">
-      <div class="search-wrap js-only">
-        <input
-          autocomplete="off"
-          id="searchInput"
-          placeholder="Search a name, street, or trade…"
-          type="text"
-        />
+      <div class="search-row">
+        <div class="search-wrap js-only">
+          <input
+            autocomplete="off"
+            id="searchInput"
+            placeholder="Search a name, street, or trade…"
+            type="text"
+          />
+        </div>
+        <label
+          aria-label="Hide most personal contacts (individuals, not businesses)"
+          class="js-only personal-toggle-wrap"
+          for="personalToggle"
+          title="Hide most personal contacts (individuals, not businesses)"
+        >
+          <span class="switch">
+            <input type="checkbox" id="personalToggle" />
+            <span class="switch-track"></span>
+          </span>
+          <span>Hide individuals</span>
+        </label>
       </div>
       <div class="chip-scroll-wrap">
         <button
@@ -3145,37 +3280,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-personal="true"
-              data-search="araik danielyan vardanants st. 86/2 dentistry +37495840401"
-            >
-              <div class="card-name">Araik Danielyan</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌂</span><span>Vardanants St. 86/2</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37495840401">+37495840401</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-personal="true"
-              data-search="arevik dentistry +37493050658"
-            >
-              <div class="card-name">Arevik</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37493050658">+37493050658</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Medicine"
               data-search="armdent clinic, armen chamuryan movsesyan st. 6 (side entrance) dentistry +37432223837 +37496514233"
@@ -3192,20 +3296,6 @@
                   ><a href="tel:+37432223837">+37432223837</a> /
                   <a href="tel:+37496514233">+37496514233</a></span
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-personal="true"
-              data-search="artak dentistry +37493893230"
-            >
-              <div class="card-name">Artak</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37493893230">+37493893230</a></span>
               </div>
             </div>
             <div
@@ -3259,73 +3349,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-geo="40.810718,44.481398"
-              data-personal="true"
-              data-search='edgar varosyan, "varosyan dent" https://yandex.com/maps/org/23388556211 dentistry'
-            >
-              <div class="card-name">Edgar Varosyan, "Varosyan Dent"</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">↳</span
-                ><a
-                  href="https://yandex.com/maps/org/23388556211"
-                  rel="noopener"
-                  target="_blank"
-                  >Map ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-personal="true"
-              data-search="gagik kalantaryan dentistry +37493199771"
-            >
-              <div class="card-name">Gagik Kalantaryan</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37493199771">+37493199771</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-personal="true"
-              data-search="georgy tadevosyan dentistry +37499075507 +37455075507 works in both vanadzor and yerevan; takes on complex operations."
-            >
-              <div class="card-name">Georgy Tadevosyan</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span
-                  >Works in both Vanadzor and Yerevan; takes on complex
-                  operations.</span
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span
-                  ><a href="tel:+37499075507">+37499075507</a> /
-                  <a href="tel:+37455075507">+37455075507</a></span
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/dr.georgitadevosyan/"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Medicine"
               data-geo="40.805654,44.49501"
@@ -3357,23 +3380,6 @@
                 ><span
                   ><a href="tel:+37432241383">+37432241383</a> /
                   <a href="tel:+37477509086">+37477509086</a></span
-                >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Medicine"
-              data-personal="true"
-              data-search="lilit, top-category doctor dentistry +37491113031 +37494328492"
-            >
-              <div class="card-name">Lilit, top-category doctor</div>
-              <span class="card-tag">Dentistry</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span
-                  ><a href="tel:+37491113031">+37491113031</a> /
-                  <a href="tel:+37494328492">+37494328492</a></span
                 >
               </div>
             </div>
@@ -3446,6 +3452,135 @@
                   rel="noopener"
                   target="_blank"
                   >Map ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-personal="true"
+              data-search="araik danielyan vardanants st. 86/2 dentistry +37495840401"
+            >
+              <div class="card-name">Araik Danielyan</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">⌂</span><span>Vardanants St. 86/2</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37495840401">+37495840401</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-personal="true"
+              data-search="arevik dentistry +37493050658"
+            >
+              <div class="card-name">Arevik</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37493050658">+37493050658</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-personal="true"
+              data-search="artak dentistry +37493893230"
+            >
+              <div class="card-name">Artak</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37493893230">+37493893230</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-geo="40.810718,44.481398"
+              data-personal="true"
+              data-search='edgar varosyan, "varosyan dent" https://yandex.com/maps/org/23388556211 dentistry'
+            >
+              <div class="card-name">Edgar Varosyan, "Varosyan Dent"</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">↳</span
+                ><a
+                  href="https://yandex.com/maps/org/23388556211"
+                  rel="noopener"
+                  target="_blank"
+                  >Map ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-personal="true"
+              data-search="gagik kalantaryan dentistry +37493199771"
+            >
+              <div class="card-name">Gagik Kalantaryan</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37493199771">+37493199771</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-personal="true"
+              data-search="georgy tadevosyan dentistry +37499075507 +37455075507 works in both vanadzor and yerevan; takes on complex operations."
+            >
+              <div class="card-name">Georgy Tadevosyan</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span
+                  >Works in both Vanadzor and Yerevan; takes on complex
+                  operations.</span
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span
+                  ><a href="tel:+37499075507">+37499075507</a> /
+                  <a href="tel:+37455075507">+37455075507</a></span
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/dr.georgitadevosyan/"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Medicine"
+              data-personal="true"
+              data-search="lilit, top-category doctor dentistry +37491113031 +37494328492"
+            >
+              <div class="card-name">Lilit, top-category doctor</div>
+              <span class="card-tag">Dentistry</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span
+                  ><a href="tel:+37491113031">+37491113031</a> /
+                  <a href="tel:+37494328492">+37494328492</a></span
                 >
               </div>
             </div>
@@ -4608,48 +4743,6 @@
           <div class="subgroup-label">Taxi</div>
           <div class="card-grid">
             <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="alen taxi +37477703751"
-            >
-              <div class="card-name">Alen</div>
-              <span class="card-tag">Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477703751">+37477703751</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="arsen taxi +37491772474"
-            >
-              <div class="card-name">Arsen</div>
-              <span class="card-tag">Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37491772474">+37491772474</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="artur taxi +37477783817"
-            >
-              <div class="card-name">Artur</div>
-              <span class="card-tag">Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477783817">+37477783817</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Transport &amp; Delivery"
               data-search="gg shared taxi, taxi 📱 has app"
@@ -4756,39 +4849,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="hovo taxi"
-            >
-              <div class="card-name">Hovo</div>
-              <span class="card-tag">Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://t.me/Hovo_Grigoryan"
-                  rel="noopener"
-                  target="_blank"
-                  >Telegram ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="khachatur taxi +37493127076"
-            >
-              <div class="card-name">Khachatur</div>
-              <span class="card-tag">Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37493127076">+37493127076</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Transport &amp; Delivery"
               data-search="real group taxi taxi +37498662919 +37499662919"
@@ -4829,20 +4889,6 @@
                   <a href="tel:+37493815544">+37493815544</a> /
                   <a href="tel:+37455815544">+37455815544</a></span
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="suren taxi +37498382508"
-            >
-              <div class="card-name">Suren</div>
-              <span class="card-tag">Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37498382508">+37498382508</a></span>
               </div>
             </div>
             <div
@@ -4889,6 +4935,95 @@
                   <a href="tel:+37494945080">+37494945080</a> /
                   <a href="tel:+37499945080">+37499945080</a></span
                 >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="alen taxi +37477703751"
+            >
+              <div class="card-name">Alen</div>
+              <span class="card-tag">Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477703751">+37477703751</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="arsen taxi +37491772474"
+            >
+              <div class="card-name">Arsen</div>
+              <span class="card-tag">Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37491772474">+37491772474</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="artur taxi +37477783817"
+            >
+              <div class="card-name">Artur</div>
+              <span class="card-tag">Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477783817">+37477783817</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="hovo taxi"
+            >
+              <div class="card-name">Hovo</div>
+              <span class="card-tag">Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://t.me/Hovo_Grigoryan"
+                  rel="noopener"
+                  target="_blank"
+                  >Telegram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="khachatur taxi +37493127076"
+            >
+              <div class="card-name">Khachatur</div>
+              <span class="card-tag">Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37493127076">+37493127076</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="suren taxi +37498382508"
+            >
+              <div class="card-name">Suren</div>
+              <span class="card-tag">Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37498382508">+37498382508</a></span>
               </div>
             </div>
           </div>
@@ -4991,29 +5126,6 @@
                   ><a href="tel:+37493093103">+37493093103</a> /
                   <a href="tel:+37433093103">+37433093103</a></span
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="ashik shared taxi dilijan 1000 amd +37496897693 gathers passengers several times a day."
-            >
-              <div class="card-name">Ashik</div>
-              <span class="card-tag">Shared Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span
-                  >Dilijan<br />Gathers passengers several times a day.</span
-                >
-              </div>
-              <div class="card-price">
-                <span class="glyph">₳</span><span>1000 AMD</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37496897693">+37496897693</a></span>
               </div>
             </div>
             <div
@@ -5273,28 +5385,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="vanadzor–yerevan via sevan to yeritasardakan metro, aren shared taxi yerevan 1500–2000 amd +37498741010"
-            >
-              <div class="card-name">
-                Vanadzor–Yerevan via Sevan to Yeritasardakan metro, Aren
-              </div>
-              <span class="card-tag">Shared Taxi</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span><span>Yerevan</span>
-              </div>
-              <div class="card-price">
-                <span class="glyph">₳</span><span>1500–2000 AMD</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37498741010">+37498741010</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Transport &amp; Delivery"
               data-search="vato taxi shared taxi dilijan 1000 amd +37477667233 door-to-door shared taxi. from dilijan at 08:00 and 15:00; from vanadzor at 11:00 and 18:00."
@@ -5350,6 +5440,51 @@
               class="card personal-off"
               data-cat="Transport &amp; Delivery"
               data-personal="true"
+              data-search="ashik shared taxi dilijan 1000 amd +37496897693 gathers passengers several times a day."
+            >
+              <div class="card-name">Ashik</div>
+              <span class="card-tag">Shared Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span
+                  >Dilijan<br />Gathers passengers several times a day.</span
+                >
+              </div>
+              <div class="card-price">
+                <span class="glyph">₳</span><span>1000 AMD</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37496897693">+37496897693</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="vanadzor–yerevan via sevan to yeritasardakan metro, aren shared taxi yerevan 1500–2000 amd +37498741010"
+            >
+              <div class="card-name">
+                Vanadzor–Yerevan via Sevan to Yeritasardakan metro, Aren
+              </div>
+              <span class="card-tag">Shared Taxi</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span><span>Yerevan</span>
+              </div>
+              <div class="card-price">
+                <span class="glyph">₳</span><span>1500–2000 AMD</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37498741010">+37498741010</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
               data-search="zhora shared taxi gyumri +37494584095"
             >
               <div class="card-name">Zhora</div>
@@ -5368,36 +5503,6 @@
         <div class="subgroup" data-sub="Transfer">
           <div class="subgroup-label">Transfer</div>
           <div class="card-grid">
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="6-seat minivan, trips and tours, aren transfer +37477794978"
-            >
-              <div class="card-name">6-seat minivan, trips and tours, Aren</div>
-              <span class="card-tag">Transfer</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477794978">+37477794978</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="aren transfer"
-            >
-              <div class="card-name">Aren</div>
-              <span class="card-tag">Transfer</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a href="https://t.me/aren2727" rel="noopener" target="_blank"
-                  >Telegram ↗</a
-                >
-              </div>
-            </div>
             <div
               class="card"
               data-cat="Transport &amp; Delivery"
@@ -5432,6 +5537,112 @@
                   href="https://t.me/Dmitriyyy111"
                   rel="noopener"
                   target="_blank"
+                  >Telegram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Transport &amp; Delivery"
+              data-search="luna pet taxi transfer yerevan, 🐶 pets allowed"
+            >
+              <div class="card-name">Luna Pet Taxi</div>
+              <span class="card-tag">Transfer</span>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span>Yerevan, 🐶 Pets allowed</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/lunapettaxi"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Transport &amp; Delivery"
+              data-search="passenger &amp; freight transport freight &amp; cargo, transfer +37494278884 +37477986888 +37499506888 +37491817820"
+            >
+              <div class="card-name">Passenger &amp; freight transport</div>
+              <span class="card-tag">Freight &amp; Cargo</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span
+                  ><a href="tel:+37494278884">+37494278884</a> /
+                  <a href="tel:+37477986888">+37477986888</a> /
+                  <a href="tel:+37499506888">+37499506888</a> /
+                  <a href="tel:+37491817820">+37491817820</a></span
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Transport &amp; Delivery"
+              data-search="passenger &amp; freight transport: armenia, georgia, krasnodar, armavir, rostov-on-don, anapa freight &amp; cargo, transfer russia +79189687545 +79181952064"
+            >
+              <div class="card-name">
+                Passenger &amp; freight transport: Armenia, Georgia, Krasnodar,
+                Armavir, Rostov-on-Don, Anapa
+              </div>
+              <span class="card-tag">Freight &amp; Cargo</span>
+              <div class="card-row">
+                <span class="glyph">✎</span><span>Russia</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span
+                  ><a href="tel:+79189687545">+79189687545</a> /
+                  <a href="tel:+79181952064">+79181952064</a></span
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Transport &amp; Delivery"
+              data-search="yerevan, sochi, tbilisi tours, 7-seat minivan transfer georgia, russia +37477330591"
+            >
+              <div class="card-name">
+                Yerevan, Sochi, Tbilisi tours, 7-seat minivan
+              </div>
+              <span class="card-tag">Transfer</span>
+              <div class="card-row">
+                <span class="glyph">✎</span><span>Georgia, Russia</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477330591">+37477330591</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="6-seat minivan, trips and tours, aren transfer +37477794978"
+            >
+              <div class="card-name">6-seat minivan, trips and tours, Aren</div>
+              <span class="card-tag">Transfer</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477794978">+37477794978</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="aren transfer"
+            >
+              <div class="card-name">Aren</div>
+              <span class="card-tag">Transfer</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a href="https://t.me/aren2727" rel="noopener" target="_blank"
                   >Telegram ↗</a
                 >
               </div>
@@ -5478,27 +5689,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37496660086">+37496660086</a></span>
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Transport &amp; Delivery"
-              data-search="luna pet taxi transfer yerevan, 🐶 pets allowed"
-            >
-              <div class="card-name">Luna Pet Taxi</div>
-              <span class="card-tag">Transfer</span>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span>Yerevan, 🐶 Pets allowed</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/lunapettaxi"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
               </div>
             </div>
             <div
@@ -5556,44 +5746,6 @@
               </div>
             </div>
             <div
-              class="card"
-              data-cat="Transport &amp; Delivery"
-              data-search="passenger &amp; freight transport freight &amp; cargo, transfer +37494278884 +37477986888 +37499506888 +37491817820"
-            >
-              <div class="card-name">Passenger &amp; freight transport</div>
-              <span class="card-tag">Freight &amp; Cargo</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span
-                  ><a href="tel:+37494278884">+37494278884</a> /
-                  <a href="tel:+37477986888">+37477986888</a> /
-                  <a href="tel:+37499506888">+37499506888</a> /
-                  <a href="tel:+37491817820">+37491817820</a></span
-                >
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Transport &amp; Delivery"
-              data-search="passenger &amp; freight transport: armenia, georgia, krasnodar, armavir, rostov-on-don, anapa freight &amp; cargo, transfer russia +79189687545 +79181952064"
-            >
-              <div class="card-name">
-                Passenger &amp; freight transport: Armenia, Georgia, Krasnodar,
-                Armavir, Rostov-on-Don, Anapa
-              </div>
-              <span class="card-tag">Freight &amp; Cargo</span>
-              <div class="card-row">
-                <span class="glyph">✎</span><span>Russia</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span
-                  ><a href="tel:+79189687545">+79189687545</a> /
-                  <a href="tel:+79181952064">+79181952064</a></span
-                >
-              </div>
-            </div>
-            <div
               class="card personal-off"
               data-cat="Transport &amp; Delivery"
               data-personal="true"
@@ -5624,23 +5776,6 @@
                 ><span><a href="tel:+37498975155">+37498975155</a></span>
               </div>
             </div>
-            <div
-              class="card"
-              data-cat="Transport &amp; Delivery"
-              data-search="yerevan, sochi, tbilisi tours, 7-seat minivan transfer georgia, russia +37477330591"
-            >
-              <div class="card-name">
-                Yerevan, Sochi, Tbilisi tours, 7-seat minivan
-              </div>
-              <span class="card-tag">Transfer</span>
-              <div class="card-row">
-                <span class="glyph">✎</span><span>Georgia, Russia</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477330591">+37477330591</a></span>
-              </div>
-            </div>
           </div>
         </div>
         <div class="subgroup" data-sub="Minibus">
@@ -5666,37 +5801,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37494408233">+37494408233</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="bus, rafik stepanyan minibus georgia 6000 amd to tbilisi +37493318765 +37499118765 +37432225130 book ahead. daily at 9, 11, 13, 15, 17 and 19. myasnikyan st. 5a"
-            >
-              <div class="card-name">Bus, Rafik Stepanyan</div>
-              <span class="card-tag">Minibus</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌂</span><span>Myasnikyan St. 5a</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span
-                  >Georgia<br />Book ahead. Daily at 9, 11, 13, 15, 17 and
-                  19.</span
-                >
-              </div>
-              <div class="card-price">
-                <span class="glyph">₳</span><span>6000 AMD to Tbilisi</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span
-                  ><a href="tel:+37493318765">+37493318765</a> /
-                  <a href="tel:+37499118765">+37499118765</a> /
-                  <a href="tel:+37432225130">+37432225130</a></span
-                >
               </div>
             </div>
             <div
@@ -5836,6 +5940,37 @@
                 >
               </div>
             </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="bus, rafik stepanyan minibus georgia 6000 amd to tbilisi +37493318765 +37499118765 +37432225130 book ahead. daily at 9, 11, 13, 15, 17 and 19. myasnikyan st. 5a"
+            >
+              <div class="card-name">Bus, Rafik Stepanyan</div>
+              <span class="card-tag">Minibus</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">⌂</span><span>Myasnikyan St. 5a</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span
+                  >Georgia<br />Book ahead. Daily at 9, 11, 13, 15, 17 and
+                  19.</span
+                >
+              </div>
+              <div class="card-price">
+                <span class="glyph">₳</span><span>6000 AMD to Tbilisi</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span
+                  ><a href="tel:+37493318765">+37493318765</a> /
+                  <a href="tel:+37499118765">+37499118765</a> /
+                  <a href="tel:+37432225130">+37432225130</a></span
+                >
+              </div>
+            </div>
           </div>
         </div>
         <div class="subgroup" data-sub="Freight &amp; Cargo">
@@ -5879,23 +6014,6 @@
                 ><a href="https://amtrans.am/ru" rel="noopener" target="_blank"
                   >amtrans.am ↗</a
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="ashot freight &amp; cargo russia +37498917820"
-            >
-              <div class="card-name">Ashot</div>
-              <span class="card-tag">Freight &amp; Cargo</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span><span>Russia</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37498917820">+37498917820</a></span>
               </div>
             </div>
             <div
@@ -5945,24 +6063,6 @@
                 ><a href="https://exco.am" rel="noopener" target="_blank"
                   >exco.am ↗</a
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="krasnodar, tigran freight &amp; cargo russia +37477619977 runs to krasnodar twice a week."
-            >
-              <div class="card-name">Krasnodar, Tigran</div>
-              <span class="card-tag">Freight &amp; Cargo</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span>Russia<br />Runs to Krasnodar twice a week.</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477619977">+37477619977</a></span>
               </div>
             </div>
             <div
@@ -6018,6 +6118,41 @@
                 >
               </div>
             </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="ashot freight &amp; cargo russia +37498917820"
+            >
+              <div class="card-name">Ashot</div>
+              <span class="card-tag">Freight &amp; Cargo</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span><span>Russia</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37498917820">+37498917820</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="krasnodar, tigran freight &amp; cargo russia +37477619977 runs to krasnodar twice a week."
+            >
+              <div class="card-name">Krasnodar, Tigran</div>
+              <span class="card-tag">Freight &amp; Cargo</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span>Russia<br />Runs to Krasnodar twice a week.</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477619977">+37477619977</a></span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="subgroup" data-sub="Vehicle Rental">
@@ -6040,22 +6175,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37477774446">+37477774446</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Transport &amp; Delivery"
-              data-personal="true"
-              data-search="bicycle rental vehicle rental"
-            >
-              <div class="card-name">Bicycle rental</div>
-              <span class="card-tag">Vehicle Rental</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a href="https://t.me/Tiger0033" rel="noopener" target="_blank"
-                  >Telegram ↗</a
-                >
               </div>
             </div>
             <div
@@ -6112,6 +6231,22 @@
                   <a href="tel:+37477774446">+37477774446</a></span
                 >
               </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a href="https://t.me/Tiger0033" rel="noopener" target="_blank"
+                  >Telegram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Transport &amp; Delivery"
+              data-personal="true"
+              data-search="bicycle rental vehicle rental"
+            >
+              <div class="card-name">Bicycle rental</div>
+              <span class="card-tag">Vehicle Rental</span>
+              <span class="badge-individual">Individual</span>
               <div class="card-row">
                 <span class="glyph">⌁</span
                 ><a href="https://t.me/Tiger0033" rel="noopener" target="_blank"
@@ -6306,6 +6441,20 @@
           <div class="subgroup-label">Boiler Repair</div>
           <div class="card-grid">
             <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-search="gas water heater repair, gazprom technician boiler repair +37493912064"
+            >
+              <div class="card-name">
+                Gas water heater repair, Gazprom technician
+              </div>
+              <span class="card-tag">Boiler Repair</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37493912064">+37493912064</a></span>
+              </div>
+            </div>
+            <div
               class="card personal-off"
               data-cat="Services &amp; Tradespeople"
               data-personal="true"
@@ -6347,20 +6496,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37498091581">+37498091581</a></span>
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-search="gas water heater repair, gazprom technician boiler repair +37493912064"
-            >
-              <div class="card-name">
-                Gas water heater repair, Gazprom technician
-              </div>
-              <span class="card-tag">Boiler Repair</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37493912064">+37493912064</a></span>
               </div>
             </div>
             <div
@@ -6453,20 +6588,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Services &amp; Tradespeople"
-              data-personal="true"
-              data-search="electronics repair, serzhik electronics repair +37498906748"
-            >
-              <div class="card-name">Electronics repair, Serzhik</div>
-              <span class="card-tag">Electronics Repair</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37498906748">+37498906748</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Services &amp; Tradespeople"
               data-search="phone and computer repair electronics repair"
@@ -6532,6 +6653,20 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37495866662">+37495866662</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Services &amp; Tradespeople"
+              data-personal="true"
+              data-search="electronics repair, serzhik electronics repair +37498906748"
+            >
+              <div class="card-name">Electronics repair, Serzhik</div>
+              <span class="card-tag">Electronics Repair</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37498906748">+37498906748</a></span>
               </div>
             </div>
           </div>
@@ -6748,6 +6883,118 @@
           <div class="subgroup-label">Self-Care</div>
           <div class="card-grid">
             <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-search="grace house beauty salon myasnikyan st. 3a/1 self-care"
+            >
+              <div class="card-name">Grace House Beauty Salon</div>
+              <span class="card-tag">Self-Care</span>
+              <div class="card-row">
+                <span class="glyph">⌂</span><span>Myasnikyan St. 3A/1</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/grace_house___/"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-geo="40.811453,44.491849"
+              data-search="i. sahakyan beauty salon https://yandex.com/maps/10258/vanadzor/house/ye0ycg5hqueoqfpqfxrwchhmzw== self-care"
+            >
+              <div class="card-name">I. Sahakyan Beauty Salon</div>
+              <span class="card-tag">Self-Care</span>
+              <div class="card-row">
+                <span class="glyph">↳</span
+                ><a
+                  href="https://yandex.com/maps/10258/vanadzor/house/YE0Ycg5hQUEOQFpqfXRwcHhmZw=="
+                  rel="noopener"
+                  target="_blank"
+                  >Map ↗</a
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/i.sahakyan_beauty_space"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-search="instyle — beauty salon, pedicure teryan st. 1/2 self-care"
+            >
+              <div class="card-name">InStyle — beauty salon, pedicure</div>
+              <span class="card-tag">Self-Care</span>
+              <div class="card-row">
+                <span class="glyph">⌂</span><span>Teryan St. 1/2</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/instyle_vanadzor"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-search="mary parfum — online cosmetics store self-care delivery to vanadzor 1500 amd"
+            >
+              <div class="card-name">Mary Parfum — online cosmetics store</div>
+              <span class="card-tag">Self-Care</span>
+              <div class="card-price">
+                <span class="glyph">₳</span
+                ><span>Delivery to Vanadzor 1500 AMD</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a href="https://maryparfum.am" rel="noopener" target="_blank"
+                  >maryparfum.am ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-geo="40.794686,44.50945"
+              data-search="vanill aesthetics studio https://yandex.com/maps/org/167951776981 self-care"
+            >
+              <div class="card-name">Vanill Aesthetics Studio</div>
+              <span class="card-tag">Self-Care</span>
+              <div class="card-row">
+                <span class="glyph">↳</span
+                ><a
+                  href="https://yandex.com/maps/org/167951776981"
+                  rel="noopener"
+                  target="_blank"
+                  >Map ↗</a
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/vanill_aesthetics_studio/"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
               class="card personal-off"
               data-cat="Services &amp; Tradespeople"
               data-geo="40.807637,44.495757"
@@ -6843,26 +7090,6 @@
               </div>
             </div>
             <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-search="grace house beauty salon myasnikyan st. 3a/1 self-care"
-            >
-              <div class="card-name">Grace House Beauty Salon</div>
-              <span class="card-tag">Self-Care</span>
-              <div class="card-row">
-                <span class="glyph">⌂</span><span>Myasnikyan St. 3A/1</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/grace_house___/"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
-              </div>
-            </div>
-            <div
               class="card personal-off"
               data-cat="Services &amp; Tradespeople"
               data-geo="40.811453,44.491849"
@@ -6904,53 +7131,6 @@
                   rel="noopener"
                   target="_blank"
                   >WhatsApp ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-geo="40.811453,44.491849"
-              data-search="i. sahakyan beauty salon https://yandex.com/maps/10258/vanadzor/house/ye0ycg5hqueoqfpqfxrwchhmzw== self-care"
-            >
-              <div class="card-name">I. Sahakyan Beauty Salon</div>
-              <span class="card-tag">Self-Care</span>
-              <div class="card-row">
-                <span class="glyph">↳</span
-                ><a
-                  href="https://yandex.com/maps/10258/vanadzor/house/YE0Ycg5hQUEOQFpqfXRwcHhmZw=="
-                  rel="noopener"
-                  target="_blank"
-                  >Map ↗</a
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/i.sahakyan_beauty_space"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-search="instyle — beauty salon, pedicure teryan st. 1/2 self-care"
-            >
-              <div class="card-name">InStyle — beauty salon, pedicure</div>
-              <span class="card-tag">Self-Care</span>
-              <div class="card-row">
-                <span class="glyph">⌂</span><span>Teryan St. 1/2</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/instyle_vanadzor"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
                 >
               </div>
             </div>
@@ -7011,24 +7191,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37498402575">+37498402575</a></span>
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-search="mary parfum — online cosmetics store self-care delivery to vanadzor 1500 amd"
-            >
-              <div class="card-name">Mary Parfum — online cosmetics store</div>
-              <span class="card-tag">Self-Care</span>
-              <div class="card-price">
-                <span class="glyph">₳</span
-                ><span>Delivery to Vanadzor 1500 AMD</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a href="https://maryparfum.am" rel="noopener" target="_blank"
-                  >maryparfum.am ↗</a
-                >
               </div>
             </div>
             <div
@@ -7148,33 +7310,6 @@
               </div>
             </div>
             <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-geo="40.794686,44.50945"
-              data-search="vanill aesthetics studio https://yandex.com/maps/org/167951776981 self-care"
-            >
-              <div class="card-name">Vanill Aesthetics Studio</div>
-              <span class="card-tag">Self-Care</span>
-              <div class="card-row">
-                <span class="glyph">↳</span
-                ><a
-                  href="https://yandex.com/maps/org/167951776981"
-                  rel="noopener"
-                  target="_blank"
-                  >Map ↗</a
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/vanill_aesthetics_studio/"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
-              </div>
-            </div>
-            <div
               class="card personal-off"
               data-cat="Services &amp; Tradespeople"
               data-personal="true"
@@ -7250,37 +7385,6 @@
                   target="_blank"
                   >Map ↗</a
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Services &amp; Tradespeople"
-              data-geo="40.80607,44.494221"
-              data-personal="true"
-              data-search="custom computer desks, ovik https://yandex.com/maps/org/mebel/180068521414 shops +37499999355 look for the desks out on the street, under the xerox sign."
-            >
-              <div class="card-name">Custom computer desks, Ovik</div>
-              <span class="card-tag">Shops</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span
-                  >Look for the desks out on the street, under the XEROX
-                  sign.</span
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">↳</span
-                ><a
-                  href="https://yandex.com/maps/org/mebel/180068521414"
-                  rel="noopener"
-                  target="_blank"
-                  >Map ↗</a
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37499999355">+37499999355</a></span>
               </div>
             </div>
             <div
@@ -7652,11 +7756,95 @@
                 >
               </div>
             </div>
+            <div
+              class="card personal-off"
+              data-cat="Services &amp; Tradespeople"
+              data-geo="40.80607,44.494221"
+              data-personal="true"
+              data-search="custom computer desks, ovik https://yandex.com/maps/org/mebel/180068521414 shops +37499999355 look for the desks out on the street, under the xerox sign."
+            >
+              <div class="card-name">Custom computer desks, Ovik</div>
+              <span class="card-tag">Shops</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span
+                  >Look for the desks out on the street, under the XEROX
+                  sign.</span
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">↳</span
+                ><a
+                  href="https://yandex.com/maps/org/mebel/180068521414"
+                  rel="noopener"
+                  target="_blank"
+                  >Map ↗</a
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37499999355">+37499999355</a></span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="subgroup" data-sub="Cleaning">
           <div class="subgroup-label">Cleaning</div>
           <div class="card-grid">
+            <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-search="hoori — furniture, mattress, and carpet dry cleaning cleaning +37455299410"
+            >
+              <div class="card-name">
+                Hoori — furniture, mattress, and carpet dry cleaning
+              </div>
+              <span class="card-tag">Cleaning</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37455299410">+37455299410</a></span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.facebook.com/hoori.cleaning"
+                  rel="noopener"
+                  target="_blank"
+                  >Facebook ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card"
+              data-cat="Services &amp; Tradespeople"
+              data-search="shiny house cleaning +37494446310 whatsapp https://wa.me/+37494446310"
+            >
+              <div class="card-name">Shiny House</div>
+              <span class="card-tag">Cleaning</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37494446310">+37494446310</a></span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.facebook.com/shiny.hause"
+                  rel="noopener"
+                  target="_blank"
+                  >Facebook ↗</a
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://wa.me/+37494446310"
+                  rel="noopener"
+                  target="_blank"
+                  >WhatsApp ↗</a
+                >
+              </div>
+            </div>
             <div
               class="card personal-off"
               data-cat="Services &amp; Tradespeople"
@@ -7757,29 +7945,6 @@
               </div>
             </div>
             <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-search="hoori — furniture, mattress, and carpet dry cleaning cleaning +37455299410"
-            >
-              <div class="card-name">
-                Hoori — furniture, mattress, and carpet dry cleaning
-              </div>
-              <span class="card-tag">Cleaning</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37455299410">+37455299410</a></span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.facebook.com/hoori.cleaning"
-                  rel="noopener"
-                  target="_blank"
-                  >Facebook ↗</a
-                >
-              </div>
-            </div>
-            <div
               class="card personal-off"
               data-cat="Services &amp; Tradespeople"
               data-personal="true"
@@ -7805,36 +7970,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37477863856">+37477863856</a></span>
-              </div>
-            </div>
-            <div
-              class="card"
-              data-cat="Services &amp; Tradespeople"
-              data-search="shiny house cleaning +37494446310 whatsapp https://wa.me/+37494446310"
-            >
-              <div class="card-name">Shiny House</div>
-              <span class="card-tag">Cleaning</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37494446310">+37494446310</a></span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.facebook.com/shiny.hause"
-                  rel="noopener"
-                  target="_blank"
-                  >Facebook ↗</a
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://wa.me/+37494446310"
-                  rel="noopener"
-                  target="_blank"
-                  >WhatsApp ↗</a
-                >
               </div>
             </div>
             <div
@@ -8054,34 +8189,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Services &amp; Tradespeople"
-              data-personal="true"
-              data-search="dog trainer yol (olga berentseva) https://t.me/canis_shamanis pet care"
-            >
-              <div class="card-name">Dog trainer Yol (Olga Berentseva)</div>
-              <span class="card-tag">Pet Care</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">↳</span
-                ><a
-                  href="https://t.me/canis_shamanis"
-                  rel="noopener"
-                  target="_blank"
-                  >Telegram ↗</a
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/kinolog.lori"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Services &amp; Tradespeople"
               data-geo="40.811423,44.488126"
@@ -8162,6 +8269,34 @@
                 >
               </div>
             </div>
+            <div
+              class="card personal-off"
+              data-cat="Services &amp; Tradespeople"
+              data-personal="true"
+              data-search="dog trainer yol (olga berentseva) https://t.me/canis_shamanis pet care"
+            >
+              <div class="card-name">Dog trainer Yol (Olga Berentseva)</div>
+              <span class="card-tag">Pet Care</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">↳</span
+                ><a
+                  href="https://t.me/canis_shamanis"
+                  rel="noopener"
+                  target="_blank"
+                  >Telegram ↗</a
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/kinolog.lori"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
           </div>
         </div>
         <div class="subgroup" data-sub="Services">
@@ -8180,23 +8315,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Services &amp; Tradespeople"
-              data-personal="true"
-              data-search="cartridge refilling, karen taterakan st. 6/1 services +37411441793"
-            >
-              <div class="card-name">Cartridge refilling, Karen</div>
-              <span class="card-tag">Services</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌂</span><span>Taterakan St. 6/1</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37411441793">+37411441793</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Services &amp; Tradespeople"
               data-search="certified document translation into english services +37493205902"
@@ -8208,24 +8326,6 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37493205902">+37493205902</a></span>
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Services &amp; Tradespeople"
-              data-personal="true"
-              data-search="furniture making, vladik services +37455120585 reportedly more than 15 years in the trade."
-            >
-              <div class="card-name">Furniture making, Vladik</div>
-              <span class="card-tag">Services</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">✎</span
-                ><span>Reportedly more than 15 years in the trade.</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37455120585">+37455120585</a></span>
               </div>
             </div>
             <div
@@ -8288,30 +8388,6 @@
                 ><a href="https://jur.am/ru/" rel="noopener" target="_blank"
                   >jur.am ↗</a
                 >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Services &amp; Tradespeople"
-              data-geo="40.812483,44.490636"
-              data-personal="true"
-              data-search="key cutting, edgar https://yandex.com/maps/10258/vanadzor/house/ye0ycg5gt0ybqfpqfxrwc3hrzw== services +37498046151"
-            >
-              <div class="card-name">Key cutting, Edgar</div>
-              <span class="card-tag">Services</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">↳</span
-                ><a
-                  href="https://yandex.com/maps/10258/vanadzor/house/YE0Ycg5gT0YBQFpqfXRwc3hrZw=="
-                  rel="noopener"
-                  target="_blank"
-                  >Map ↗</a
-                >
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37498046151">+37498046151</a></span>
               </div>
             </div>
             <div
@@ -8384,6 +8460,65 @@
                   target="_blank"
                   >Map ↗</a
                 >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Services &amp; Tradespeople"
+              data-personal="true"
+              data-search="cartridge refilling, karen taterakan st. 6/1 services +37411441793"
+            >
+              <div class="card-name">Cartridge refilling, Karen</div>
+              <span class="card-tag">Services</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">⌂</span><span>Taterakan St. 6/1</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37411441793">+37411441793</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Services &amp; Tradespeople"
+              data-personal="true"
+              data-search="furniture making, vladik services +37455120585 reportedly more than 15 years in the trade."
+            >
+              <div class="card-name">Furniture making, Vladik</div>
+              <span class="card-tag">Services</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">✎</span
+                ><span>Reportedly more than 15 years in the trade.</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37455120585">+37455120585</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Services &amp; Tradespeople"
+              data-geo="40.812483,44.490636"
+              data-personal="true"
+              data-search="key cutting, edgar https://yandex.com/maps/10258/vanadzor/house/ye0ycg5gt0ybqfpqfxrwc3hrzw== services +37498046151"
+            >
+              <div class="card-name">Key cutting, Edgar</div>
+              <span class="card-tag">Services</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">↳</span
+                ><a
+                  href="https://yandex.com/maps/10258/vanadzor/house/YE0Ycg5gT0YBQFpqfXRwc3hrZw=="
+                  rel="noopener"
+                  target="_blank"
+                  >Map ↗</a
+                >
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37498046151">+37498046151</a></span>
               </div>
             </div>
           </div>
@@ -9496,51 +9631,6 @@
           <div class="subgroup-label">Delivery</div>
           <div class="card-grid">
             <div
-              class="card personal-off"
-              data-cat="Food"
-              data-personal="true"
-              data-search="daily lunches, hasmik delivery, services +37455783733 1500 amd each"
-            >
-              <div class="card-name">Daily lunches, Hasmik</div>
-              <span class="card-tag">Delivery</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-price">
-                <span class="glyph">₳</span><span>1500 AMD each</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37455783733">+37455783733</a></span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://www.instagram.com/chef_vanadzor"
-                  rel="noopener"
-                  target="_blank"
-                  >Instagram ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Food"
-              data-personal="true"
-              data-search="diet food per dietitian's recommendations, tatev delivery, services +37477043028 5500 amd/day"
-            >
-              <div class="card-name">
-                Diet food per dietitian's recommendations, Tatev
-              </div>
-              <span class="card-tag">Delivery</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-price">
-                <span class="glyph">₳</span><span>5500 AMD/day</span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477043028">+37477043028</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Food"
               data-search="glovo delivery 📱 has app"
@@ -9570,49 +9660,6 @@
                   rel="noopener"
                   target="_blank"
                   >iOS ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Food"
-              data-personal="true"
-              data-search="home-cooked food, order a day in advance, snezhana delivery, services +37477911044"
-            >
-              <div class="card-name">
-                Home-cooked food, order a day in advance, Snezhana
-              </div>
-              <span class="card-tag">Delivery</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37477911044">+37477911044</a></span>
-              </div>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a href="https://t.me/SizAnnA" rel="noopener" target="_blank"
-                  >Telegram ↗</a
-                >
-              </div>
-            </div>
-            <div
-              class="card personal-off"
-              data-cat="Food"
-              data-personal="true"
-              data-search="marianna — food made to order with delivery delivery, services"
-            >
-              <div class="card-name">
-                Marianna — food made to order with delivery
-              </div>
-              <span class="card-tag">Delivery</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">⌁</span
-                ><a
-                  href="https://t.me/MariannaMane"
-                  rel="noopener"
-                  target="_blank"
-                  >Telegram ↗</a
                 >
               </div>
             </div>
@@ -9679,6 +9726,94 @@
                   rel="noopener"
                   target="_blank"
                   >iOS ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Food"
+              data-personal="true"
+              data-search="daily lunches, hasmik delivery, services +37455783733 1500 amd each"
+            >
+              <div class="card-name">Daily lunches, Hasmik</div>
+              <span class="card-tag">Delivery</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-price">
+                <span class="glyph">₳</span><span>1500 AMD each</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37455783733">+37455783733</a></span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://www.instagram.com/chef_vanadzor"
+                  rel="noopener"
+                  target="_blank"
+                  >Instagram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Food"
+              data-personal="true"
+              data-search="diet food per dietitian's recommendations, tatev delivery, services +37477043028 5500 amd/day"
+            >
+              <div class="card-name">
+                Diet food per dietitian's recommendations, Tatev
+              </div>
+              <span class="card-tag">Delivery</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-price">
+                <span class="glyph">₳</span><span>5500 AMD/day</span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477043028">+37477043028</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Food"
+              data-personal="true"
+              data-search="home-cooked food, order a day in advance, snezhana delivery, services +37477911044"
+            >
+              <div class="card-name">
+                Home-cooked food, order a day in advance, Snezhana
+              </div>
+              <span class="card-tag">Delivery</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37477911044">+37477911044</a></span>
+              </div>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a href="https://t.me/SizAnnA" rel="noopener" target="_blank"
+                  >Telegram ↗</a
+                >
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Food"
+              data-personal="true"
+              data-search="marianna — food made to order with delivery delivery, services"
+            >
+              <div class="card-name">
+                Marianna — food made to order with delivery
+              </div>
+              <span class="card-tag">Delivery</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">⌁</span
+                ><a
+                  href="https://t.me/MariannaMane"
+                  rel="noopener"
+                  target="_blank"
+                  >Telegram ↗</a
                 >
               </div>
             </div>
@@ -11235,20 +11370,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Leisure"
-              data-personal="true"
-              data-search="guitar lessons, marat hakobyan for kids, education +37493314099"
-            >
-              <div class="card-name">Guitar lessons, Marat Hakobyan</div>
-              <span class="card-tag">For Kids</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37493314099">+37493314099</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Leisure"
               data-geo="40.809327,44.494277"
@@ -11399,20 +11520,6 @@
               </div>
             </div>
             <div
-              class="card personal-off"
-              data-cat="Leisure"
-              data-personal="true"
-              data-search="piano lessons, natalya for kids, education +37491959585"
-            >
-              <div class="card-name">Piano lessons, Natalya</div>
-              <span class="card-tag">For Kids</span>
-              <span class="badge-individual">Individual</span>
-              <div class="card-row">
-                <span class="glyph">☎</span
-                ><span><a href="tel:+37491959585">+37491959585</a></span>
-              </div>
-            </div>
-            <div
               class="card"
               data-cat="Leisure"
               data-geo="40.807049,44.494155"
@@ -11460,6 +11567,34 @@
               <div class="card-row">
                 <span class="glyph">☎</span
                 ><span><a href="tel:+37441117799">+37441117799</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Leisure"
+              data-personal="true"
+              data-search="guitar lessons, marat hakobyan for kids, education +37493314099"
+            >
+              <div class="card-name">Guitar lessons, Marat Hakobyan</div>
+              <span class="card-tag">For Kids</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37493314099">+37493314099</a></span>
+              </div>
+            </div>
+            <div
+              class="card personal-off"
+              data-cat="Leisure"
+              data-personal="true"
+              data-search="piano lessons, natalya for kids, education +37491959585"
+            >
+              <div class="card-name">Piano lessons, Natalya</div>
+              <span class="card-tag">For Kids</span>
+              <span class="badge-individual">Individual</span>
+              <div class="card-row">
+                <span class="glyph">☎</span
+                ><span><a href="tel:+37491959585">+37491959585</a></span>
               </div>
             </div>
           </div>
@@ -11651,16 +11786,6 @@
       No entries match that search. Try a shorter word.
     </div>
     <div class="js-only hidden-subcats-notice" id="hiddenSubcatsNotice"></div>
-    <label class="js-only personal-toggle-wrap" for="personalToggle">
-      <span class="switch">
-        <input type="checkbox" id="personalToggle" checked />
-        <span class="switch-track"></span>
-      </span>
-      <span
-        >Hide <em>most</em> personal contacts (individuals, not
-        businesses)</span
-      >
-    </label>
       <div aria-hidden="true" class="bar-release"></div>
       <!-- Absolutely positioned at the wrapper's bottom edge, which is exactly
            where the sticky bar runs out of container. Once this crosses the top
@@ -12946,6 +13071,7 @@
         var toggle = document.getElementById("personalToggle");
         if (!toggle) return;
 
+        var wrap = toggle.closest(".personal-toggle-wrap");
         var STORAGE_KEY = "vanadzor_hide_personal";
 
         function savePreference(value) {
@@ -13030,6 +13156,15 @@
               c.className = c.className.replace(/\bpersonal-off\b/g, "");
             }
           }
+          if (wrap) {
+            if (hide) {
+              if (wrap.className.indexOf("active") === -1) {
+                wrap.className = wrap.className + " active";
+              }
+            } else {
+              wrap.className = wrap.className.replace(/\bactive\b/g, "");
+            }
+          }
           if (typeof applyFilters === "function") {
             applyFilters();
           }
@@ -13043,7 +13178,7 @@
         var hideByDefault = isOfflineSnapshot
           ? false
           : saved === null
-            ? true
+            ? false
             : saved === "1";
         toggle.checked = hideByDefault;
         applyPersonalVisibility(hideByDefault);
@@ -13053,6 +13188,73 @@
           applyPersonalVisibility(hide);
           savePreference(hide ? "1" : "0");
         });
+
+        // The notice names subcategories the toggle just erased; tapping it
+        // points back at the control responsible rather than leaving the
+        // reader to go hunting for a pill that may have folded off-screen
+        // (see 11-toggle-fold.js) on a narrow, scrolled-down viewport.
+        var notice = document.getElementById("hiddenSubcatsNotice");
+        if (notice && wrap) {
+          notice.setAttribute("role", "button");
+          notice.setAttribute("tabindex", "0");
+          notice.title = "Show the toggle that's hiding these";
+
+          // Checked directly rather than inferred from .toggle-folded: past
+          // the foot of the directory (About section, footer) the bar isn't
+          // sticky any more and scrolls away with everything else, on any
+          // viewport width, folded or not. The opacity check is what catches
+          // the fold itself — folded still leaves a couple of border pixels
+          // in the box (max-height zeroes out but border-width doesn't), so
+          // geometry alone reads a folded pill as "on screen".
+          function toggleOnScreen() {
+            var cs = window.getComputedStyle(wrap);
+            if (parseFloat(cs.opacity) < 0.5) return false;
+            var r = wrap.getBoundingClientRect();
+            var vh = window.innerHeight || document.documentElement.clientHeight;
+            return r.height > 8 && r.top >= 0 && r.bottom <= vh;
+          }
+
+          var flashTimer;
+          function flash() {
+            wrap.classList.remove("toggle-flash");
+            void wrap.offsetWidth;
+            wrap.classList.add("toggle-flash");
+            clearTimeout(flashTimer);
+            flashTimer = setTimeout(function () {
+              wrap.classList.remove("toggle-flash");
+            }, 1300);
+          }
+
+          function highlightToggle() {
+            if (toggleOnScreen()) {
+              flash();
+              return;
+            }
+            // Wait for the scroll to actually land before flashing — flashing
+            // mid-scroll points at nothing, since the pill isn't where the
+            // reader is looking yet. scrollend is the true signal; the
+            // timeout is only a backstop for a browser without it.
+            var settled = false;
+            function onSettled() {
+              if (settled) return;
+              settled = true;
+              window.removeEventListener("scrollend", onSettled);
+              clearTimeout(fallback);
+              flash();
+            }
+            window.addEventListener("scrollend", onSettled);
+            var fallback = setTimeout(onSettled, 2000);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+
+          notice.addEventListener("click", highlightToggle);
+          notice.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+              e.preventDefault();
+              highlightToggle();
+            }
+          });
+        }
       })();
 
       /* Back-to-top button: shown only once the sticky controls bar has run
@@ -16102,6 +16304,70 @@
 
         window.addEventListener("resize", schedule);
         schedule();
+      })();
+
+      /* On a narrow viewport the "Hide individuals" toggle drops to its own line
+         below the search box (.search-row's flex-wrap, no fixed breakpoint) —
+         see the CSS comment on .personal-toggle-wrap.toggle-folded. Once it has
+         a line to itself, it also has a line to give back: this folds it away
+         as soon as the reader scrolls past the top of the directory and brings
+         it back once they scroll back up to it, same sentinel technique as
+         07-back-to-top.js. Wrapped state is measured, not assumed, since it
+         depends on content width rather than viewport width. */
+      (function () {
+        var wrap = document.querySelector(".personal-toggle-wrap");
+        var searchWrap = document.querySelector(".search-wrap");
+        var sentinel = document.querySelector(".toggle-top-sentinel");
+        if (!wrap || !searchWrap || !sentinel || !window.IntersectionObserver) {
+          return;
+        }
+
+        var atTop = true;
+        var wrapped = false;
+
+        function update() {
+          wrap.classList.toggle("toggle-folded", wrapped && !atTop);
+        }
+
+        function checkWrapped() {
+          var wasFolded = wrap.classList.contains("toggle-folded");
+          if (wasFolded) wrap.classList.remove("toggle-folded");
+          // On the same line the two sit close in top offset (align-items:center
+          // just staggers them a couple px for their differing heights); wrapped
+          // to its own line, the toggle's top lands at or past the search box's
+          // bottom edge.
+          wrapped =
+            wrap.getBoundingClientRect().top >=
+            searchWrap.getBoundingClientRect().bottom - 2;
+          if (wasFolded) wrap.classList.add("toggle-folded");
+          update();
+        }
+
+        checkWrapped();
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(checkWrapped).catch(function () {});
+        }
+
+        var resizeTimer;
+        window.addEventListener("resize", function () {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(checkWrapped, 100);
+        });
+
+        // Hysteresis, not a single line: the sentinel has real height (see its
+        // CSS), and only its fully-in (ratio 1) and fully-out (ratio 0) ends
+        // flip the state. Scroll positions inside that band change nothing, so
+        // the couple of px of elastic overscroll bounce at the very top of the
+        // page can't make the toggle flicker in and out.
+        new IntersectionObserver(
+          function (entries) {
+            var ratio = entries[entries.length - 1].intersectionRatio;
+            if (ratio >= 1) atTop = true;
+            else if (ratio <= 0) atTop = false;
+            update();
+          },
+          { threshold: [0, 1] },
+        ).observe(sentinel);
       })();
     </script>
   </body>

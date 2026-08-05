@@ -20,6 +20,7 @@
   var toggle = document.getElementById("personalToggle");
   if (!toggle) return;
 
+  var wrap = toggle.closest(".personal-toggle-wrap");
   var STORAGE_KEY = "vanadzor_hide_personal";
 
   function savePreference(value) {
@@ -104,6 +105,15 @@
         c.className = c.className.replace(/\bpersonal-off\b/g, "");
       }
     }
+    if (wrap) {
+      if (hide) {
+        if (wrap.className.indexOf("active") === -1) {
+          wrap.className = wrap.className + " active";
+        }
+      } else {
+        wrap.className = wrap.className.replace(/\bactive\b/g, "");
+      }
+    }
     if (typeof applyFilters === "function") {
       applyFilters();
     }
@@ -117,7 +127,7 @@
   var hideByDefault = isOfflineSnapshot
     ? false
     : saved === null
-      ? true
+      ? false
       : saved === "1";
   toggle.checked = hideByDefault;
   applyPersonalVisibility(hideByDefault);
@@ -127,4 +137,71 @@
     applyPersonalVisibility(hide);
     savePreference(hide ? "1" : "0");
   });
+
+  // The notice names subcategories the toggle just erased; tapping it
+  // points back at the control responsible rather than leaving the
+  // reader to go hunting for a pill that may have folded off-screen
+  // (see 11-toggle-fold.js) on a narrow, scrolled-down viewport.
+  var notice = document.getElementById("hiddenSubcatsNotice");
+  if (notice && wrap) {
+    notice.setAttribute("role", "button");
+    notice.setAttribute("tabindex", "0");
+    notice.title = "Show the toggle that's hiding these";
+
+    // Checked directly rather than inferred from .toggle-folded: past
+    // the foot of the directory (About section, footer) the bar isn't
+    // sticky any more and scrolls away with everything else, on any
+    // viewport width, folded or not. The opacity check is what catches
+    // the fold itself — folded still leaves a couple of border pixels
+    // in the box (max-height zeroes out but border-width doesn't), so
+    // geometry alone reads a folded pill as "on screen".
+    function toggleOnScreen() {
+      var cs = window.getComputedStyle(wrap);
+      if (parseFloat(cs.opacity) < 0.5) return false;
+      var r = wrap.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      return r.height > 8 && r.top >= 0 && r.bottom <= vh;
+    }
+
+    var flashTimer;
+    function flash() {
+      wrap.classList.remove("toggle-flash");
+      void wrap.offsetWidth;
+      wrap.classList.add("toggle-flash");
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(function () {
+        wrap.classList.remove("toggle-flash");
+      }, 1300);
+    }
+
+    function highlightToggle() {
+      if (toggleOnScreen()) {
+        flash();
+        return;
+      }
+      // Wait for the scroll to actually land before flashing — flashing
+      // mid-scroll points at nothing, since the pill isn't where the
+      // reader is looking yet. scrollend is the true signal; the
+      // timeout is only a backstop for a browser without it.
+      var settled = false;
+      function onSettled() {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener("scrollend", onSettled);
+        clearTimeout(fallback);
+        flash();
+      }
+      window.addEventListener("scrollend", onSettled);
+      var fallback = setTimeout(onSettled, 2000);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    notice.addEventListener("click", highlightToggle);
+    notice.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        highlightToggle();
+      }
+    });
+  }
 })();
