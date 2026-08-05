@@ -126,12 +126,13 @@
 
   var overlay = null;
   var panelEl = null;
-  var titleWrap = null;
-  var titleEl = null;
-  var subEl = null;
-  var actions = null;
-  var yaLink = null;
-  var outBtn = null;
+  // Not a plate in the corner any more: what is picked out on the map
+  // is described by a card standing on the thing it describes, whether
+  // that is an entry of the index or a point the reader tapped. This
+  // is the one line that has to stay in the panel for a reader who
+  // cannot see either — the name of whatever is currently picked,
+  // announced but never drawn.
+  var sayEl = null;
   var clearBtn = null;
   var closeBtn = null;
   var mapEl = null;
@@ -146,16 +147,25 @@
   var meHalo = null;
   var spotsEl = null;
   var popupEl = null;
+  var popHead = null;
+  var popMark = null;
+  var popCat = null;
   var popScroll = null;
   var popTail = null;
   var popClose = null;
   var popActions = null;
   var popYa = null;
   var popOut = null;
-  // Which of the two "open in different maps" buttons the question is
-  // up for — the head's, or the card's.
+  // Which of the two things the one card can be about: "entry" for an
+  // entry of the index, cloned out of the page, and "point" for a
+  // place the reader tapped and Nominatim named. They never coexist —
+  // one card, two fillings — but a good deal below has to know which
+  // it is holding, starting with what a tap on the map then means.
+  var popKind = null;
+  var popHeldKind = null;
   var confirmFrom = null;
   var hintEl = null;
+  var creditEl = null;
   var note = null;
   var askBox = null;
   var goLink = null;
@@ -250,6 +260,10 @@
       popW = popupEl.offsetWidth;
       popH = popupEl.offsetHeight;
     }
+    // How much of the map's foot the attribution chip is standing on,
+    // measured from the map's bottom edge so the chip's own offset
+    // counts too. See popBottomEdge.
+    creditH = creditEl ? vh - creditEl.offsetTop : 0;
   }
   function viewLeft() {
     return cx - vw / 2;
@@ -624,30 +638,15 @@
       pick ? "Show the picked point" : "Picked point",
     );
     if (!on) {
-      titleEl.className = "mapview-title is-off";
-      subEl.className = "mapview-sub is-off";
-      actions.className = "mapview-actions is-off";
-      // The dialog is named by its title, and there isn't one now.
-      panelEl.removeAttribute("aria-labelledby");
-      panelEl.setAttribute("aria-label", "Map preview");
       closeConfirm();
+      sayEl.textContent = "";
     } else {
-      panelEl.removeAttribute("aria-label");
-      panelEl.setAttribute("aria-labelledby", "mapviewTitle");
-      var coords = coordText(on.lat, on.lon);
-      var name = on.name || coords;
-      titleEl.className = "mapview-title";
-      subEl.className = "mapview-sub";
-      actions.className = "mapview-actions";
-      titleEl.textContent = name;
-      subEl.textContent = on.addr || (on.name ? coords : "");
-      // The entry keeps its own Yandex page — an org listing with
-      // hours and a phone number behind it, which no pair of
-      // coordinates can reconstruct. A picked point has only the
-      // coordinates. The other way out is aimed when it is pressed
-      // instead, since either this button or the card's may be the
-      // one asking, and they can be pointing at different places.
-      yaLink.href = on.href || yandexPoint(on.lat, on.lon);
+      // Everything the reader can see about the selection is on the
+      // card standing over it. This is what is left for a reader who
+      // is being read to: the same line, spoken.
+      sayEl.textContent = on.pending
+        ? "Looking up this place…"
+        : on.name || coordText(on.lat, on.lon);
     }
     entryPin.className =
       "mapview-pin mapview-pin-entry" +
@@ -658,6 +657,12 @@
       "mapview-clear" +
       (locateBtn ? "" : " is-apart") +
       (on ? "" : " is-off");
+    // A point's card is redrawn from here, which is what runs when the
+    // geocoder finally answers and the shimmer has to become a name.
+    // An entry's card is not: it is a clone of something that has not
+    // changed. Guarded on the card being about *this* point, so a pick
+    // that has just been replaced does not redraw the new one's card.
+    if (popKind === "point" && popSpot === pick && pick) fillPoint(pick);
     // The gatherings depend on what is selected, so this may rebuild
     // them; layoutSpots decides, and does nothing if nothing changed.
     layoutSpots();
@@ -680,8 +685,15 @@
     sel = "pick";
     hintDone();
     placePin(pickPin, pick);
-    showSelection();
+    // Before the card is drawn, not after: lookup only marks the point
+    // as waiting and sets a timer, and the mark is what fillPoint reads
+    // to shimmer the name rather than draw the coordinates in its place
+    // for the second before the geocoder answers.
     lookup(pick);
+    showSelection();
+    // After showSelection, not before: it refreshes a point card that
+    // is already up, and there is no sense filling this one twice.
+    openPointPopup(pick);
   }
   // Clearing a picked point takes the pin with it; clearing the entry
   // leaves its pin behind, dimmed, since it is the reason the panel
@@ -691,6 +703,7 @@
     // Taking away what is picked takes the card with it, including
     // one waiting behind the dialog to come back.
     popHeld = null;
+    popHeldKind = null;
     if (sel === "pick") {
       pick = null;
       placePin(pickPin, null);
@@ -759,6 +772,7 @@
       spotsEl.appendChild(el);
       spots.push({
         card: card,
+        cat: card.getAttribute("data-cat"),
         lat: geo.lat,
         lon: geo.lon,
         name: name,
@@ -1090,6 +1104,7 @@
      page. */
   function openPopup(spot) {
     popSpot = spot;
+    popKind = "entry";
     while (popScroll.firstChild) {
       popScroll.removeChild(popScroll.firstChild);
     }
@@ -1111,10 +1126,78 @@
     }
     popScroll.appendChild(clone);
     popYa.href = spot.href || yandexPoint(spot.lat, spot.lon);
-    popScroll.appendChild(popActions);
+    // The strip takes the marker's own mark and its category's name.
+    // A category the icon table doesn't know draws a plain disc on the
+    // map, and gets a plain disc here for the same reason.
+    popStrip(catIcon(spot.cat), spot.cat || "", "entry");
+    popShow();
+  }
+  /* ---- The same card, over a point the reader picked ----------------
+     A tapped point used to be described by a plate in the panel's top
+     left corner, which meant the one thing on screen that said what
+     had just been picked was as far as possible from the pin saying
+     where. It is the same card as an entry's now, standing on its own
+     pin with its own tail: the name Nominatim gives it, the
+     coordinates under that, and the same two ways out. */
+  function openPointPopup(at) {
+    popSpot = at;
+    popKind = "point";
+    fillPoint(at);
+    popShow();
+  }
+  // The contents alone, so the geocoder answering can redraw the card
+  // in place rather than opening a second one over the first.
+  function fillPoint(at) {
+    while (popScroll.firstChild) popScroll.removeChild(popScroll.firstChild);
+    var coords = coordText(at.lat, at.lon);
+    var name = document.createElement("div");
+    name.className = "mapview-pop-name";
+    var sub = document.createElement("div");
+    sub.className = "mapview-pop-sub";
+    // While the geocoder is still being asked, the line where the name
+    // will go shimmers instead of standing in for the name with the
+    // coordinates — which read as the answer, and then turned into a
+    // different answer a second later. The coordinates keep the line
+    // below, where they are true before and after, and where the
+    // address replaces them when one arrives.
+    if (at.pending) {
+      name.className = "mapview-pop-name is-looking";
+      var bar = document.createElement("span");
+      bar.className = "mapview-skel";
+      bar.setAttribute("aria-hidden", "true");
+      name.appendChild(bar);
+      var say = document.createElement("span");
+      say.className = "mapview-vh";
+      say.textContent = "Looking up this place…";
+      name.appendChild(say);
+      sub.textContent = coords;
+    } else {
+      name.textContent = at.name || coords;
+      sub.textContent = at.addr || (at.name ? coords : "");
+    }
+    popScroll.appendChild(name);
+    if (sub.textContent) popScroll.appendChild(sub);
+    // A point has no listing behind it, only a place on the map.
+    popYa.href = yandexPoint(at.lat, at.lon);
+    popStrip(null, "Picked point", "point");
+    // Naming it changes its height, so the card has to be measured and
+    // stood again — but only once it is actually up.
+    if (popupEl.style.display !== "none") popShow();
+  }
+  // The head strip: a mark cut from the same drawing as the thing on
+  // the map below, and a word for what kind of thing it is.
+  function popStrip(mark, label, kind) {
+    while (popMark.firstChild) popMark.removeChild(popMark.firstChild);
+    if (mark) popMark.appendChild(mark);
+    popMark.className = "mapview-pop-mark is-" + kind;
+    popCat.textContent = label;
+  }
+  // Everything both fillings share: put it up, measure it, and stand
+  // it on its pin.
+  function popShow() {
     popupEl.style.display = "";
-    // Measured once, here, rather than on every frame of a pan: the
-    // content only changes when this runs.
+    // Measured here rather than on every frame of a pan: the content
+    // only changes when this runs.
     popW = popupEl.offsetWidth;
     popH = popupEl.offsetHeight;
     fitPopup();
@@ -1124,6 +1207,7 @@
     if (!popSpot) return;
     var held = popupEl.contains(document.activeElement);
     popSpot = null;
+    popKind = null;
     popupEl.style.display = "none";
     if (held) mapEl.focus();
   }
@@ -1135,11 +1219,37 @@
   // question was answered.
   function holdPopup() {
     var on = popSpot;
+    // Which filling it had, kept with it: closePopup forgets, and what
+    // comes back has to be built the same way it was — an entry is
+    // cloned from the page, a point is written out from its
+    // coordinates, and handing one to the other's builder is a crash.
+    var kind = popKind;
     closePopup();
     popHeld = on;
+    popHeldKind = kind;
+  }
+  function unholdPopup() {
+    if (!popHeld) return;
+    var back = popHeld;
+    var kind = popHeldKind;
+    popHeld = null;
+    popHeldKind = null;
+    if (kind === "point") openPointPopup(back);
+    else openPopup(back);
   }
   var POP_GAP = 20;
   var POP_EDGE = 8;
+  // The card never stands over the credit chip in the map's bottom
+  // left corner. That chip is OpenStreetMap's attribution and the
+  // tiles are only usable while it is legible, so the bottom margin
+  // is measured from the chip rather than fixed — it follows the line
+  // when it wraps on a narrow panel. Read in measure() rather than
+  // here: placePopup runs on every frame of a pan, and offsetHeight
+  // is a layout read.
+  var creditH = 0;
+  function popBottomEdge() {
+    return POP_EDGE + creditH;
+  }
   // If the card won't fit over its marker, the map moves rather than
   // the card: shoved into a corner it would still be over the marker
   // but no longer pointing at it, and the tail is the whole reason a
@@ -1169,10 +1279,11 @@
   }
   // How near a corner the tail's point may come, so it always leaves
   // from the flat part of an edge rather than off a rounded end.
+  // One distance for all four corners now. It used to be doubled at
+  // the top right, which the close button hung off the outside of;
+  // the button sits inside the head strip these days and nothing
+  // overhangs the card at all.
   var POP_TAIL = 16;
-  // ...except at the top right corner, which the close button hangs
-  // off: the two edges meeting there hold the tail further away.
-  var POP_TAIL_SHUT = 30;
   // The tail has to reach the marker, and it only protrudes about
   // this far, so an edge nearer the marker than this cannot carry it.
   var POP_REACH = 10;
@@ -1187,11 +1298,7 @@
   // How far along its edge the tail's point may sit, as an offset
   // into the card from that edge's start.
   function popTailRange(side) {
-    return [
-      side === "right" ? POP_TAIL_SHUT : POP_TAIL,
-      (popTailAcross(side) ? popW : popH) -
-        (side === "top" ? POP_TAIL_SHUT : POP_TAIL),
-    ];
+    return [POP_TAIL, (popTailAcross(side) ? popW : popH) - POP_TAIL];
   }
   // Which of the card's four edges the tail leaves from, and where
   // the card itself stands. The card is stood clear of the marker on
@@ -1206,7 +1313,7 @@
   // the marker it is describing.
   function popupPlace(x, y) {
     var maxLeft = vw - popW - POP_EDGE;
-    var maxTop = vh - popH - POP_EDGE;
+    var maxTop = vh - popH - popBottomEdge();
     var beside = [
       { side: "right", left: x - POP_GAP - popW, top: y - popH / 2 },
       { side: "left", left: x + POP_GAP, top: y - popH / 2 },
@@ -1529,7 +1636,12 @@
   var geoLast = 0;
   var geoTimer = null;
   var geoReq = null;
+  // Marked on the point rather than held in a variable of its own, so
+  // that a point superseded mid-flight takes its own pending state out
+  // of the panel with it — showSelection only ever asks whatever is
+  // currently picked.
   function lookup(at) {
+    at.pending = true;
     var token = ++geoToken;
     if (geoReq) {
       geoReq.onload = null;
@@ -1563,6 +1675,7 @@
     req.onload = function () {
       if (token !== geoToken) return;
       geoReq = null;
+      if (pick !== at) return;
       var data = null;
       try {
         data = JSON.parse(req.responseText);
@@ -1571,18 +1684,27 @@
       }
       // Out at sea, or over a blank corner of the map, the geocoder
       // answers with an error rather than a place. The coordinates
-      // already on screen are the honest answer there.
-      if (!data || data.error) return;
-      var read = readPlace(data);
-      if (pick !== at) return;
-      at.name = read.name;
-      at.addr = read.addr;
-      if (sel === "pick") showSelection();
+      // already on screen are the honest answer there — settle
+      // regardless, or the shimmer would run until the panel closed.
+      if (data && !data.error) {
+        var read = readPlace(data);
+        at.name = read.name;
+        at.addr = read.addr;
+      }
+      settle(at);
     };
     req.onerror = req.ontimeout = function () {
-      if (token === geoToken) geoReq = null;
+      if (token !== geoToken) return;
+      geoReq = null;
+      settle(at);
     };
     req.send();
+  }
+  // The end of a lookup, however it ended: the point stops waiting and
+  // the head redraws, which is what takes the shimmer away.
+  function settle(at) {
+    at.pending = false;
+    if (pick === at && sel === "pick") showSelection();
   }
   // What came back, cut down to a line and a half. A building or a
   // business answers with a name; a stretch of road answers with only
@@ -1865,15 +1987,21 @@
       zoomTo(zoom + 2, gx, gy);
       return;
     }
-    // With a card standing open, a press on the map is a press on
-    // nothing, and puts the card away rather than picking a new
-    // point. It takes the entry with it: opening the card is what
+    // With an *entry's* card standing open, a press on the map is a
+    // press on nothing, and puts the card away rather than picking a
+    // new point. It takes the entry with it: opening the card is what
     // picked the entry in the first place, so putting the card away
     // is undoing that one act — and an entry left picked with its
     // card gone is a marker still standing large and inked over
-    // nothing that says why, with the head describing a place the
-    // reader has just dismissed.
-    if (popSpot) {
+    // nothing that says why.
+    //
+    // A picked point's card is the opposite case. It is not something
+    // the press has to get out of the way of; it is the answer to the
+    // last press, and the reader pressing somewhere else is asking the
+    // same question about somewhere else. So the point moves and the
+    // card follows it, exactly as it did when this was a plate in the
+    // corner.
+    if (popSpot && popKind === "entry") {
       clearSelection();
       return;
     }
@@ -1935,58 +2063,28 @@
     panelEl.className = "mapview-panel";
     panelEl.setAttribute("role", "dialog");
     panelEl.setAttribute("aria-modal", "true");
-    panelEl.setAttribute("aria-labelledby", "mapviewTitle");
+    // Nothing left to name it after: what is picked is described by a
+    // card standing on the map, not by a title in the panel's chrome.
+    panelEl.setAttribute("aria-label", "Map preview");
 
-    var head = document.createElement("div");
-    head.className = "mapview-head";
-    titleWrap = document.createElement("div");
-    titleWrap.className = "mapview-titlewrap";
-    // The head is the only thing that says what was picked, and a
-    // reader who picked it with the keyboard never saw the map move.
-    titleWrap.setAttribute("aria-live", "polite");
-    titleEl = document.createElement("div");
-    titleEl.className = "mapview-title";
-    titleEl.id = "mapviewTitle";
-    subEl = document.createElement("div");
-    subEl.className = "mapview-sub";
-    titleWrap.appendChild(titleEl);
-    titleWrap.appendChild(subEl);
+    // What the plate in the corner used to be, for a reader who is
+    // being read to rather than looking: the name of whatever is
+    // currently picked, announced when it changes and never drawn.
+    // Someone who picked a point with the keyboard never saw the map
+    // move, and this is what tells them what they got.
+    sayEl = document.createElement("div");
+    sayEl.className = "mapview-vh";
+    sayEl.setAttribute("aria-live", "polite");
 
-    actions = document.createElement("div");
-    actions.className = "mapview-actions";
-    // The recommended way out, and the reason the other one asks
-    // first. On a phone this is also the closest thing to opening the
-    // Yandex Maps app directly: a page has no way to ask what is
-    // installed, but both platforms let an app claim its own site's
-    // links, so an https://yandex.com/maps/… address lands in the app
-    // when it is there and in the browser when it isn't. No probing,
-    // nothing to fail — which is why it is a plain link.
-    yaLink = document.createElement("a");
-    yaLink.className = "mapview-out mapview-out-primary";
-    yaLink.rel = "noopener";
-    // Only the desktop links really open a page, and only they get a
-    // new tab: a handoff to an app would leave an empty one behind.
-    if (!IS_ANDROID && !IS_IOS) yaLink.target = "_blank";
-    yaLink.textContent = "Open in Yandex Maps ↗";
-    // A button, not a link: it opens the dialog below, and the link
-    // it eventually follows lives in there.
-    outBtn = document.createElement("button");
-    outBtn.className = "mapview-out";
-    outBtn.type = "button";
-    outBtn.setAttribute("aria-haspopup", "dialog");
-    outBtn.setAttribute("aria-expanded", "false");
-    outBtn.textContent = "Open in different maps";
-    actions.appendChild(yaLink);
-    actions.appendChild(outBtn);
-
+    // The one way out of the panel, and the only chrome that is never
+    // about what is picked — so it stands on its own in a corner of
+    // the map. Not to be confused with the card's own close button,
+    // which puts the selection away rather than the panel.
     closeBtn = document.createElement("button");
     closeBtn.className = "mapview-close";
     closeBtn.type = "button";
     closeBtn.setAttribute("aria-label", "Close map preview");
     closeBtn.appendChild(icon(ICON_CLOSE));
-    head.appendChild(titleWrap);
-    head.appendChild(actions);
-    head.appendChild(closeBtn);
 
     var body = document.createElement("div");
     body.className = "mapview-body";
@@ -2038,8 +2136,6 @@
     zoomOutBtn.type = "button";
     zoomOutBtn.appendChild(icon(ICON_OUT));
     zoomOutBtn.setAttribute("aria-label", "Zoom out");
-    tools.appendChild(zoomInBtn);
-    tools.appendChild(zoomOutBtn);
     // Only offered where the browser can answer it at all. Over
     // file:// — which is what a saved snapshot would be, if the panel
     // ran there — the API is missing outright rather than refusing,
@@ -2051,7 +2147,6 @@
       locateBtn.appendChild(icon(ICON_LOCATE));
       locateBtn.setAttribute("aria-label", "Show my location");
       locateBtn.title = "Show my location";
-      tools.appendChild(locateBtn);
     }
     // Sits with the map's own controls rather than with the two ways
     // out, because it acts on the map — and it is only there when
@@ -2063,26 +2158,60 @@
     clearBtn.appendChild(icon(ICON_CLEAR));
     clearBtn.setAttribute("aria-label", "Clear the picked point");
     clearBtn.title = "Clear the picked point";
+    // Appended so the column reads, top to bottom: clear, locate, then
+    // the two zoom steps nearest the corner. The two that come and go
+    // are the two at the top, and the column is anchored by its foot —
+    // so a selection appearing or being cleared never shifts the zoom
+    // buttons out from under the finger reaching for them. is-apart
+    // therefore holds the gap *below* itself, and lands on whichever of
+    // the pair is the last one standing.
     tools.appendChild(clearBtn);
+    if (locateBtn) tools.appendChild(locateBtn);
+    tools.appendChild(zoomInBtn);
+    tools.appendChild(zoomOutBtn);
     mapEl.appendChild(tools);
 
     popupEl = document.createElement("div");
     popupEl.className = "mapview-pop tail-bottom";
     popupEl.style.display = "none";
+    // A strip naming the kind of thing the card is about, with that
+    // thing's own mark in it — the same drawing, at the same size, as
+    // the marker or the pin the tail is pointing at. It is what makes
+    // the card read as that pin's record rather than as something
+    // floating loose over the map, and it costs one element: an
+    // entry's name and everything under it still come from the clone.
+    // It also carries the card's close button, which used to hang off
+    // the outside of the top right corner.
+    popHead = document.createElement("div");
+    popHead.className = "mapview-pop-head";
+    popMark = document.createElement("span");
+    popMark.className = "mapview-pop-mark";
+    popCat = document.createElement("span");
+    popCat.className = "mapview-pop-cat";
+    popHead.appendChild(popMark);
+    popHead.appendChild(popCat);
     popScroll = document.createElement("div");
     popScroll.className = "mapview-pop-scroll";
     popTail = document.createElement("div");
     popTail.className = "mapview-pop-tail";
+    // Inside the head strip, at the end of it. It used to be a disc
+    // pushed 10px past the card's top right corner, hanging over the
+    // map — which is why the tail had to keep twice its usual distance
+    // from that one corner, and why the card could not simply clip
+    // itself to its own rounded frame. In the strip it costs no
+    // overhang, needs no exception, and sits in the one row of the
+    // card that is chrome rather than content.
     popClose = document.createElement("button");
     popClose.type = "button";
     popClose.className = "mapview-pop-close";
-    popClose.setAttribute("aria-label", "Close this entry");
+    popClose.setAttribute("aria-label", "Close this card");
     popClose.appendChild(icon(ICON_CLOSE));
-    // The head's pair again, at the card. Built once and put back
-    // under each clone rather than cloned with it, so they carry
-    // their listeners and nothing has to be rebound per entry. They
-    // are aimed at the card's own entry, not at the selection, and
-    // say so by name.
+    popHead.appendChild(popClose);
+    // Built once and put under each filling rather than rebuilt with
+    // it, so they carry their listeners and nothing has to be rebound.
+    // They are aimed at whatever the card is about — this entry, or
+    // this point — and not at the selection, which for a moment during
+    // a change may be something else.
     popActions = document.createElement("div");
     popActions.className = "mapview-pop-actions";
     popYa = document.createElement("a");
@@ -2098,9 +2227,15 @@
     popOut.textContent = "Open in different maps";
     popActions.appendChild(popYa);
     popActions.appendChild(popOut);
+    // The two ways out are a footer of the card now rather than the
+    // last thing inside its scroller: an entry with a long note used
+    // to push them off the bottom, so the reader had to scroll a card
+    // they had already read to find the button they wanted. Pinned,
+    // they are where they were the last time, on every entry.
+    popupEl.appendChild(popHead);
     popupEl.appendChild(popScroll);
+    popupEl.appendChild(popActions);
     popupEl.appendChild(popTail);
-    popupEl.appendChild(popClose);
     mapEl.appendChild(popupEl);
 
     hintEl = document.createElement("div");
@@ -2179,34 +2314,45 @@
     // OpenStreetMap's licence asks for the credit, and the geocoder
     // is worth naming too: it is the other thing being asked, and it
     // is asked on the reader's behalf.
-    var credit = document.createElement("div");
-    credit.className = "mapview-credit";
-    credit.appendChild(document.createTextNode("Map data © "));
+    creditEl = document.createElement("div");
+    creditEl.className = "mapview-credit";
+    // Set as short as the two attributions can honestly be put. The
+    // sentence this used to be — "Map data © OpenStreetMap
+    // contributors. Place names from Nominatim." — needs about 414px to
+    // stand on one line, which is wider than the map is on every phone
+    // there is, so it wrapped on all of them however much room the
+    // buttons gave back. What is left is the wording ODbL actually asks
+    // for, verbatim, and the geocoder named; only the prose framing
+    // went. It fits on one line down to a 320px screen.
+    creditEl.appendChild(document.createTextNode("© "));
     var osmLink = document.createElement("a");
     osmLink.href = "https://www.openstreetmap.org/copyright";
     osmLink.rel = "noopener";
     osmLink.target = "_blank";
     osmLink.textContent = "OpenStreetMap contributors";
-    credit.appendChild(osmLink);
-    credit.appendChild(
-      document.createTextNode(". Place names from Nominatim."),
-    );
+    creditEl.appendChild(osmLink);
+    creditEl.appendChild(document.createTextNode(" · Nominatim"));
 
-    panelEl.appendChild(head);
+    // Both float over the map, after the loading note so it can never
+    // cover the way out, and before the confirm dialog, which covers
+    // everything. The card carries its own z-index and stands above
+    // them both.
+    body.appendChild(closeBtn);
+    body.appendChild(creditEl);
+    body.appendChild(sayEl);
     panelEl.appendChild(body);
-    panelEl.appendChild(credit);
     overlay.appendChild(panelEl);
     document.body.appendChild(overlay);
 
     closeBtn.addEventListener("click", close);
-    // Either way of asking the question clears the card out of the
-    // way of the answer — the head's button at the top of the panel
-    // and the card's own, at the bottom of the card.
-    outBtn.addEventListener("click", function () {
-      var on = current();
-      if (on) holdPopup();
-      openConfirm(outBtn, on);
-    });
+    // The card's ✕ takes the selection with it, not just the card. The
+    // card is the only thing that says what is picked, so leaving one
+    // picked behind it would be a marker standing large and inked over
+    // nothing that says why — which is the same reason a press on the
+    // map clears it (see onPointerUp).
+    popClose.addEventListener("click", clearSelection);
+    // Asking the question clears the card out of the way of the
+    // answer; closeConfirm puts it back however the question ended.
     popOut.addEventListener("click", function () {
       if (popSpot) holdPopup();
       openConfirm(popOut, popHeld);
@@ -2220,7 +2366,6 @@
       zoomTo(zoom - 1);
     });
     if (locateBtn) locateBtn.addEventListener("click", locate);
-    popClose.addEventListener("click", closePopup);
     mapEl.addEventListener("pointerdown", onPointerDown);
     mapEl.addEventListener("pointermove", onPointerMove);
     mapEl.addEventListener("pointerup", onPointerUp);
@@ -2302,26 +2447,42 @@
   function tabStops() {
     if (confirmOpen()) return [cancelBtn, goLink];
     var stops = [];
-    if (sel) {
-      stops.push(yaLink);
-      stops.push(outBtn);
-    }
     stops.push(closeBtn);
     stops.push(mapEl);
     if (popSpot) {
       stops.push(popClose);
       var inPop = popScroll.querySelectorAll("a, button");
       for (var p = 0; p < inPop.length; p++) stops.push(inPop[p]);
+      // The card's own two ways out are a pinned footer now rather than
+      // the last thing in its scroller, so the sweep above no longer
+      // reaches them. Last, as they are last on the card.
+      stops.push(popYa);
+      stops.push(popOut);
     }
     if (!zoomInBtn.disabled) stops.push(zoomInBtn);
     if (!zoomOutBtn.disabled) stops.push(zoomOutBtn);
     if (locateBtn) stops.push(locateBtn);
     if (sel) stops.push(clearBtn);
-    // Last, and only when they are on the map: they are the way back
-    // to a selection that has been cleared.
+    // Last: they are the way back to a selection that has been cleared.
     if (entry) stops.push(entryPin);
     if (pick) stops.push(pickPin);
-    return stops;
+    // Sieved down to what is actually drawn. Half of these come and go
+    // — the card comes and goes with the selection, the entry's pin is
+    // absent whenever the entry has a marker of its own to be, the
+    // clear button appears with the selection — and .focus() on
+    // something that isn't rendered does nothing whatever, silently.
+    // Tab would then find the same index again on the next press and
+    // hand it to the same missing element for ever, which is a trap
+    // built out of nothing but an optimistic list. Anything drawn is
+    // reachable; nothing else is offered.
+    var live = [];
+    for (var i = 0; i < stops.length; i++) {
+      if (stops[i] && stops[i].offsetWidth && stops[i].offsetHeight) {
+        live.push(stops[i]);
+      }
+    }
+    // The way out is never not a stop.
+    return live.length ? live : [closeBtn];
   }
 
   function confirmOpen() {
@@ -2333,7 +2494,7 @@
   // question comes from the card standing on the map.
   function openConfirm(from, on) {
     if (!askBox || !on) return;
-    confirmFrom = from || outBtn;
+    confirmFrom = from || popOut;
     goLink.href = pointTarget(
       on.lat,
       on.lon,
@@ -2352,7 +2513,6 @@
     var from = confirmFrom;
     confirmFrom = null;
     askBox.className = "mapview-confirm";
-    outBtn.setAttribute("aria-expanded", "false");
     popOut.setAttribute("aria-expanded", "false");
     // However the question was answered — Cancel, Continue, Escape, a
     // press on the scrim — the card that stood aside for it comes
@@ -2360,16 +2520,15 @@
     // dialog interrupted, and none of those four answers is a reason
     // to take it away from them. Before the focus is handed over,
     // since the button it goes back to lives inside the card.
-    if (popHeld) {
-      var back = popHeld;
-      popHeld = null;
-      openPopup(back);
-    }
+    unholdPopup();
     // display:none takes the focus with it, so hand it back to the
     // button that opened the dialog rather than to the document.
+    // The card's button is only a place to put the focus while the
+    // card is on the map, and restoring it above may not have happened
+    // — the answer may have been to leave. The panel's close button is
+    // always there, which is what makes it the fallback.
     if (held) {
       if (from === popOut && popSpot) popOut.focus();
-      else if (sel) outBtn.focus();
       else closeBtn.focus();
     }
   }
@@ -2474,6 +2633,7 @@
     // Whatever was being read last time is not what is being opened
     // now, so nothing is owed a card back.
     popHeld = null;
+    popHeldKind = null;
     spotZoom = -1;
     spotSel = null;
     placePin(pickPin, null);
@@ -2510,7 +2670,8 @@
     showSelection();
     // Opened from a card, the panel opens that card too: the marker
     // is picked out and its own entry stands over it, which is what
-    // tapping the marker would have done.
+    // tapping the marker would have done. It is also the only thing
+    // that says what was opened, now that the corner plate is gone.
     if (at) openPopup(at);
     // The size is taken; let the panel animate again, so the next
     // pan can grow it.
@@ -2577,6 +2738,7 @@
     clearTimeout(growTimer);
     closePopup();
     popHeld = null;
+    popHeldKind = null;
     // Back to a window over the page, whichever way it was opened:
     // the next card to be tapped is a glance again.
     isFull = false;
@@ -2586,7 +2748,7 @@
     // link below, not to a button in a panel that is on its way out.
     if (askBox) {
       askBox.className = "mapview-confirm";
-      outBtn.setAttribute("aria-expanded", "false");
+      popOut.setAttribute("aria-expanded", "false");
     }
     document.documentElement.classList.remove("mapview-open");
     document.documentElement.style.paddingRight = "";
@@ -2664,8 +2826,10 @@
       closeConfirm();
       return;
     }
+    // The card first, the panel on a second press — and the card goes
+    // with its selection, exactly as its own ✕ does.
     if (popSpot) {
-      closePopup();
+      clearSelection();
       return;
     }
     close();

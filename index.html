@@ -90,7 +90,45 @@
       content="A working directory of kitchens, beds, transport, clinics, offices &amp; workshops — 392 entries on file."
     />
     <style>
+      /* ---------- Design tokens ----------------------------------------
+         Two layers. The first is theme-independent — type stacks, the
+         radius and spacing scales, easing — and is declared once here.
+         The second is the palette, which has to be written three times
+         (default, prefers-color-scheme, explicit data-theme) and must be
+         kept in step across all three.
+
+         The mono stack is the page's voice for anything clerical: labels,
+         phone numbers, chips, captions. It asks the platform for its own
+         mono face — SF Mono, Consolas, Roboto Mono — rather than naming
+         Courier New, which is a scan of a typewriter and renders thin and
+         pale at the 11-13px this page sets it at. Advance width is ~0.6em
+         in all of them, so the switch costs no layout. */
       :root {
+        --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter,
+          Georgia, serif;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          "Roboto Mono", "Liberation Mono", monospace;
+
+        /* One radius scale, so a chip, a card and the map panel round by
+           related amounts instead of each picking its own 2 or 3px. */
+        --r-xs: 4px;
+        --r-sm: 7px;
+        --r-md: 11px;
+        --r-lg: 16px;
+        --r-pill: 999px;
+
+        --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+        --t-fast: 0.14s;
+        --t-mid: 0.22s;
+
+        /* Painted through a mask so it takes currentColor and follows the
+           theme; the stroke colour inside the data URI is never seen. */
+        --icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.2 16.2 21 21'/%3E%3C/svg%3E");
+
+        /* Tells the browser which way round this page is, so the caret,
+           the scrollbars and the form controls it draws itself come out
+           in the same mode as everything above. */
+        color-scheme: light;
         --ink: #23291f;
         --paper: #f4efe2;
         --paper-card: #fbf8ee;
@@ -107,17 +145,46 @@
         --you: #2f6f8f;
         --muted: #6b6555;
         --muted-strong: #57513f;
-        --shadow: 0 1px 0 rgba(35, 41, 31, 0.06);
-        --shadow-soft: rgba(35, 41, 31, 0.05);
         --shadow-med: rgba(35, 41, 31, 0.1);
         --shadow-strong: rgba(35, 41, 31, 0.18);
         --tint-pine: rgba(60, 82, 64, 0.1);
         --tint-pine-bg: rgba(60, 82, 64, 0.05);
         --scrim: rgba(35, 41, 31, 0.62);
+        /* Hairlines. --line is what separates a surface from the page;
+           the saturated --kraft-line is kept for things that really are
+           drawn rules. A 14%-ink hairline reads as an edge without
+           drawing a box around everything on the page. */
+        --line: rgba(35, 41, 31, 0.14);
+        /* Running text inside a card. The old --muted did double duty as
+           both label grey and body grey, which left every card uniformly
+           faint; --muted now labels, --body speaks. */
+        --body: #4a4636;
+        --focus: #a8451f;
+        --bar-bg: rgba(244, 239, 226, 0.86);
+        --skel: rgba(35, 41, 31, 0.1);
+        --skel-hi: rgba(255, 255, 255, 0.7);
+        --tint-rust: rgba(168, 69, 31, 0.09);
+        --tint-amber: rgba(201, 138, 44, 0.13);
+        /* Amber is a fine rule colour and a poor text colour: --tab-amber
+           on its own tint does not clear 4.5:1, so tags get this darker
+           relative instead. */
+        --amber-ink: #855911;
+        /* Three steps of elevation, each a tight contact shadow plus a
+           wide soft one — a single hard 1px offset is what made the cards
+           read as stickers. */
+        --elev-1:
+          0 1px 2px rgba(35, 41, 31, 0.05), 0 1px 3px rgba(35, 41, 31, 0.04);
+        --elev-2:
+          0 2px 4px rgba(35, 41, 31, 0.05),
+          0 10px 24px -8px rgba(35, 41, 31, 0.16);
+        --elev-3:
+          0 4px 10px rgba(35, 41, 31, 0.07),
+          0 24px 50px -14px rgba(35, 41, 31, 0.26);
       }
 
       @media (prefers-color-scheme: dark) {
         :root {
+          color-scheme: dark;
           --ink: #e8e3d3;
           --paper: #16180f;
           --paper-card: #1f2317;
@@ -130,17 +197,33 @@
           --you: #7fb6d4;
           --muted: #c9c4b2;
           --muted-strong: #d6d1bf;
-          --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
-          --shadow-soft: rgba(0, 0, 0, 0.25);
           --shadow-med: rgba(0, 0, 0, 0.35);
           --shadow-strong: rgba(0, 0, 0, 0.45);
           --tint-pine: rgba(124, 140, 129, 0.12);
           --tint-pine-bg: rgba(124, 140, 129, 0.06);
           --scrim: rgba(0, 0, 0, 0.72);
+          --line: rgba(232, 227, 211, 0.15);
+          --body: #bcb6a3;
+          --focus: #e08a57;
+          --bar-bg: rgba(22, 24, 15, 0.86);
+        --skel: rgba(232, 227, 211, 0.12);
+        --skel-hi: rgba(255, 255, 255, 0.16);
+          --skel: rgba(232, 227, 211, 0.12);
+          --skel-hi: rgba(255, 255, 255, 0.16);
+          --tint-rust: rgba(224, 138, 87, 0.12);
+          --tint-amber: rgba(232, 180, 92, 0.14);
+          --amber-ink: #e8b45c;
+          --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+          --elev-2:
+            0 2px 4px rgba(0, 0, 0, 0.35), 0 10px 24px -8px rgba(0, 0, 0, 0.55);
+          --elev-3:
+            0 4px 10px rgba(0, 0, 0, 0.4),
+            0 24px 50px -14px rgba(0, 0, 0, 0.65);
         }
       }
 
       html[data-theme="light"] {
+        color-scheme: light;
         --ink: #23291f;
         --paper: #f4efe2;
         --paper-card: #fbf8ee;
@@ -153,16 +236,32 @@
         --you: #2f6f8f;
         --muted: #6b6555;
         --muted-strong: #57513f;
-        --shadow: 0 1px 0 rgba(35, 41, 31, 0.06);
-        --shadow-soft: rgba(35, 41, 31, 0.05);
         --shadow-med: rgba(35, 41, 31, 0.1);
         --shadow-strong: rgba(35, 41, 31, 0.18);
         --tint-pine: rgba(60, 82, 64, 0.1);
         --tint-pine-bg: rgba(60, 82, 64, 0.05);
         --scrim: rgba(35, 41, 31, 0.62);
+        --line: rgba(35, 41, 31, 0.14);
+        --body: #4a4636;
+        --focus: #a8451f;
+        --bar-bg: rgba(244, 239, 226, 0.86);
+        --skel: rgba(35, 41, 31, 0.1);
+        --skel-hi: rgba(255, 255, 255, 0.7);
+        --tint-rust: rgba(168, 69, 31, 0.09);
+        --tint-amber: rgba(201, 138, 44, 0.13);
+        --amber-ink: #855911;
+        --elev-1:
+          0 1px 2px rgba(35, 41, 31, 0.05), 0 1px 3px rgba(35, 41, 31, 0.04);
+        --elev-2:
+          0 2px 4px rgba(35, 41, 31, 0.05),
+          0 10px 24px -8px rgba(35, 41, 31, 0.16);
+        --elev-3:
+          0 4px 10px rgba(35, 41, 31, 0.07),
+          0 24px 50px -14px rgba(35, 41, 31, 0.26);
       }
 
       html[data-theme="dark"] {
+        color-scheme: dark;
         --ink: #e8e3d3;
         --paper: #16180f;
         --paper-card: #1f2317;
@@ -175,13 +274,25 @@
         --you: #7fb6d4;
         --muted: #c9c4b2;
         --muted-strong: #d6d1bf;
-        --shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
-        --shadow-soft: rgba(0, 0, 0, 0.25);
         --shadow-med: rgba(0, 0, 0, 0.35);
         --shadow-strong: rgba(0, 0, 0, 0.45);
         --tint-pine: rgba(124, 140, 129, 0.12);
         --tint-pine-bg: rgba(124, 140, 129, 0.06);
         --scrim: rgba(0, 0, 0, 0.72);
+        --line: rgba(232, 227, 211, 0.15);
+        --body: #bcb6a3;
+        --focus: #e08a57;
+        --bar-bg: rgba(22, 24, 15, 0.86);
+        --skel: rgba(232, 227, 211, 0.12);
+        --skel-hi: rgba(255, 255, 255, 0.16);
+        --tint-rust: rgba(224, 138, 87, 0.12);
+        --tint-amber: rgba(232, 180, 92, 0.14);
+        --amber-ink: #e8b45c;
+        --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --elev-2:
+          0 2px 4px rgba(0, 0, 0, 0.35), 0 10px 24px -8px rgba(0, 0, 0, 0.55);
+        --elev-3:
+          0 4px 10px rgba(0, 0, 0, 0.4), 0 24px 50px -14px rgba(0, 0, 0, 0.65);
       }
 
       html {
@@ -212,19 +323,40 @@
         font-weight: bold;
       }
 
+      /* One visible focus ring for the whole page, in :where() so it has
+         zero specificity — anything that needs its own (the map districts,
+         the map panel's controls) still overrides it by simply existing.
+         Modern browsers run the outline around the element's own
+         border-radius, so this needs no per-component shape. */
+      :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+      }
+
       body {
         margin: 0;
         overflow-x: hidden;
+        /* Two very quiet washes rather than one: pine off the top-left
+           corner and rust off the far right, so a long scroll is not a
+           flat field of paper. Both are under 6% and neither reads as a
+           colour — they read as light. */
         background:
           radial-gradient(
-            ellipse at top left,
+            ellipse 90% 60% at 0% 0%,
             var(--tint-pine-bg),
-            transparent 45%
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 70% 50% at 100% 12%,
+            var(--tint-rust),
+            transparent 65%
           ),
           var(--paper);
+        background-attachment: fixed;
         color: var(--ink);
-        font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+        font-family: var(--serif);
         -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
       }
 
       .grain {
@@ -258,19 +390,19 @@
         transform: translateX(6px);
         pointer-events: none;
         white-space: nowrap;
-        font-family: "Courier New", Courier, monospace;
+        font-family: var(--mono);
         font-size: 0.62rem;
         letter-spacing: 0.09em;
         text-transform: uppercase;
         color: var(--ink);
         background: var(--paper-card);
-        border: 1px solid var(--kraft-line);
-        border-radius: 3px;
-        padding: 0.28rem 0.5rem;
-        box-shadow: 0 2px 8px var(--shadow-med);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        padding: 0.32rem 0.55rem;
+        box-shadow: var(--elev-2);
         transition:
-          opacity 0.15s,
-          transform 0.15s;
+          opacity var(--t-fast) var(--ease),
+          transform var(--t-fast) var(--ease);
       }
       /* Keyboard focus only: a tap leaves focus sitting on the button, so
          :focus-within would pin the label open until something else was
@@ -301,7 +433,7 @@
         width: 38px;
         height: 38px;
         border-radius: 50%;
-        border: 1.5px solid var(--kraft-line);
+        border: 1px solid var(--line);
         background: var(--paper-card);
         color: var(--ink);
         display: flex;
@@ -313,28 +445,40 @@
         text-align: center;
         cursor: pointer;
         padding: 0;
-        box-shadow: 0 2px 8px var(--shadow-med);
+        box-shadow: var(--elev-2);
         transition:
-          background 0.15s,
-          border-color 0.15s,
-          transform 0.15s;
+          background var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          transform var(--t-mid) var(--ease);
       }
       #themeIcon {
         display: block;
         flex-shrink: 0;
+        transition: transform var(--t-mid) var(--ease);
       }
       .theme-toggle:hover {
         border-color: var(--pine);
         transform: scale(1.06);
+      }
+      /* The icon is a half-filled disc; turning it is the switch. */
+      .theme-toggle:hover #themeIcon {
+        transform: rotate(-18deg);
+      }
+      .theme-toggle:active {
+        transform: scale(0.96);
       }
 
       /* ---------- Masthead ---------- */
       header.masthead {
         position: relative;
         z-index: 1;
-        padding: 3.2rem 1.5rem 2rem;
+        padding: 4rem 1.5rem 2.4rem;
         text-align: center;
-        border-bottom: 3px double var(--ink);
+        /* The double rule is the one piece of newspaper furniture worth
+           keeping, but drawn in ink it was the heaviest line on the page.
+           In kraft it still reads as a masthead and stops competing with
+           the title standing above it. */
+        border-bottom: 3px double var(--kraft-line);
       }
       @media (max-width: 480px) {
         header.masthead {
@@ -384,20 +528,31 @@
         z-index: 1;
       }
       .eyebrow {
-        font-family: "Courier New", monospace;
-        letter-spacing: 0.28em;
+        font-family: var(--mono);
+        letter-spacing: 0.3em;
+        /* Tracking pads after every glyph, the last one included, so a
+           centred line's ink sits half a unit left of true centre. Half
+           the tracking put back as an indent recentres it — at 0.3em on
+           this line that is a visible ~2px, which is why it is corrected
+           here and left alone everywhere the tracking is small. */
+        text-indent: 0.15em;
         text-transform: uppercase;
-        font-size: 0.7rem;
+        font-size: 0.66rem;
+        font-weight: 500;
         color: var(--rust);
-        margin-bottom: 0.9rem;
+        margin-bottom: 1.1rem;
       }
       h1.title {
-        font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+        font-family: var(--serif);
         font-weight: 700;
-        font-size: clamp(2.6rem, 7vw, 4.4rem);
+        font-size: clamp(2.6rem, 7vw, 4.6rem);
         margin: 0;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.022em;
         line-height: 0.95;
+        /* Display sizes want tighter fitting than the same face set at
+           reading size; the browser only does it if asked. */
+        font-kerning: normal;
+        font-optical-sizing: auto;
       }
       .title-word {
         display: inline;
@@ -427,38 +582,30 @@
         border-bottom-color: var(--rust);
       }
       .subtitle {
-        font-family: "Courier New", monospace;
-        font-size: 0.85rem;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        line-height: 1.6;
         color: var(--muted-strong);
-        margin-top: 0.85rem;
-        letter-spacing: 0.03em;
+        margin-top: 1rem;
+        letter-spacing: 0.01em;
+        max-width: 62ch;
+        margin-left: auto;
+        margin-right: auto;
       }
       .stamp {
         display: inline-block;
-        margin-top: 1.4rem;
-        padding: 0.4rem 1.1rem;
-        border: 1.5px solid var(--pine);
+        margin-top: 1.6rem;
+        padding: 0.42rem 1.1rem;
+        border: 1px solid var(--pine);
+        background: var(--tint-pine-bg);
         color: var(--pine);
-        font-family: "Courier New", monospace;
-        font-size: 0.64rem;
-        letter-spacing: 0.18em;
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.2em;
+        text-indent: 0.1em;
         text-transform: uppercase;
         transform: rotate(-1.2deg);
-        border-radius: 2px;
-      }
-      @media (prefers-color-scheme: dark) {
-        .stamp {
-          background: var(--pine);
-          color: #e8e3d3;
-        }
-      }
-      html[data-theme="dark"] .stamp {
-        background: var(--pine);
-        color: #e8e3d3;
-      }
-      html[data-theme="light"] .stamp {
-        background: transparent;
-        color: var(--pine);
+        border-radius: var(--r-xs);
       }
 
       /* ---------- Controls ---------- */
@@ -489,51 +636,79 @@
         height: 1px;
         pointer-events: none;
       }
+      /* The bar floats over the directory rather than sitting on an opaque
+         slab of paper: the cards passing under it stay faintly legible,
+         which is what tells the reader the page is still moving. The
+         translucency is only claimed where the browser can actually blur
+         behind it — @supports keeps the fallback fully opaque, since a
+         see-through bar with no blur is unreadable. */
       .controls {
         position: sticky;
         top: 0;
         z-index: 30;
         background: var(--paper);
-        border-bottom: 1px solid var(--kraft-line);
-        padding: 0.85rem 1.5rem;
+        border-bottom: 1px solid var(--line);
+        padding: 0.9rem 1.5rem 0.85rem;
         display: flex;
         flex-direction: column;
-        gap: 0.55rem;
-        box-shadow: 0 2px 8px var(--shadow-soft);
+        gap: 0.6rem;
+      }
+      @supports (backdrop-filter: blur(1px)) or
+        (-webkit-backdrop-filter: blur(1px)) {
+        .controls {
+          background: var(--bar-bg);
+          -webkit-backdrop-filter: saturate(1.4) blur(14px);
+          backdrop-filter: saturate(1.4) blur(14px);
+        }
       }
       .search-wrap {
         position: relative;
         width: 100%;
-        max-width: 640px;
+        max-width: 620px;
         margin: 0 auto;
       }
       .search-wrap input {
         width: 100%;
-        font-family: "Courier New", monospace;
-        font-size: 0.95rem;
-        padding: 0.6rem 0.9rem 0.6rem 2.1rem;
-        border: 1.5px solid var(--ink);
+        font-family: var(--mono);
+        font-size: 0.9rem;
+        padding: 0.62rem 0.9rem 0.62rem 2.4rem;
+        border: 1px solid var(--line);
         background: var(--paper-card);
         color: var(--ink);
-        border-radius: 3px;
+        border-radius: var(--r-md);
         outline: none;
+        box-shadow: var(--elev-1);
+        transition:
+          border-color var(--t-fast) var(--ease),
+          box-shadow var(--t-fast) var(--ease);
       }
       .search-wrap input::placeholder {
         color: var(--muted);
       }
+      .search-wrap input:hover {
+        border-color: var(--kraft-line);
+      }
       .search-wrap input:focus {
         border-color: var(--rust);
-        box-shadow: 0 0 0 3px rgba(168, 69, 31, 0.12);
+        box-shadow: 0 0 0 3px var(--tint-rust);
       }
+      /* Drawn, not typed: "⌕" is missing from most text fonts, so the
+         browser substituted a per-platform face and the glyph landed at a
+         different size and baseline on each one. Same reasoning as the
+         map tools' icon() helper. */
       .search-wrap::before {
-        content: "⌕";
+        content: "";
         position: absolute;
-        left: 0.75rem;
+        left: 0.85rem;
         top: 50%;
+        width: 15px;
+        height: 15px;
         transform: translateY(-50%);
-        font-size: 1.1rem;
+        background: currentColor;
         color: var(--muted);
         pointer-events: none;
+        -webkit-mask: var(--icon-search) center / contain no-repeat;
+        mask: var(--icon-search) center / contain no-repeat;
       }
       .chip-scroll-wrap {
         position: relative;
@@ -620,27 +795,29 @@
         top: 50%;
         transform: translateY(-50%);
         z-index: 6;
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         border-radius: 50%;
-        border: 1.3px solid var(--kraft-line);
+        border: 1px solid var(--line);
         background: var(--paper-card);
-        color: var(--ink);
+        color: var(--muted-strong);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.85rem;
         line-height: 1;
         cursor: pointer;
         padding: 0;
-        box-shadow: 0 1px 5px var(--shadow-strong);
+        box-shadow: var(--elev-2);
         transition:
-          opacity 0.15s,
-          border-color 0.15s;
+          opacity var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease);
       }
       .chip-arrow:hover {
         border-color: var(--pine);
+        color: var(--ink);
       }
       .chip-arrow.disabled {
         opacity: 0;
@@ -652,16 +829,21 @@
       .chip-arrow-right {
         right: -2px;
       }
+      /* Filled at rest rather than outlined. Seven hollow rings in a row
+         read as one dotted rule; a quiet fill makes each one a target and
+         leaves the selected chip room to be the only saturated thing in
+         the bar. */
       .chip {
-        font-family: "Courier New", monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.06em;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
-        padding: 0.42rem 0.75rem;
-        border: 1.3px solid var(--kraft-line);
-        background: transparent;
-        color: var(--ink);
-        border-radius: 999px;
+        padding: 0.47rem 0.8rem;
+        border: 1px solid transparent;
+        background: var(--tint-pine);
+        color: var(--muted-strong);
+        border-radius: var(--r-pill);
         cursor: pointer;
         white-space: nowrap;
         flex-shrink: 0;
@@ -669,23 +851,35 @@
         display: inline-block;
         line-height: 1;
         transition:
-          background 0.15s,
-          color 0.15s,
-          border-color 0.15s;
+          background var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease);
       }
       .chip:hover {
         border-color: var(--pine);
         color: var(--ink);
       }
       .chip:visited {
-        color: var(--ink);
+        color: var(--muted-strong);
       }
-      .chip.active {
+      .chip.active,
+      .chip.active:visited {
         background: var(--pine);
         border-color: var(--pine);
         color: var(--paper-card);
       }
-      .chip.active:visited {
+      @media (prefers-color-scheme: dark) {
+        .chip.active,
+        .chip.active:visited {
+          color: var(--paper);
+        }
+      }
+      html[data-theme="dark"] .chip.active,
+      html[data-theme="dark"] .chip.active:visited {
+        color: var(--paper);
+      }
+      html[data-theme="light"] .chip.active,
+      html[data-theme="light"] .chip.active:visited {
         color: var(--paper-card);
       }
       .result-count {
@@ -705,61 +899,69 @@
       }
 
       section.category {
-        margin-bottom: 3.6rem;
-        scroll-margin-top: 5.5rem;
+        margin-bottom: 4.2rem;
+        scroll-margin-top: 6rem;
       }
       .cat-head {
         display: flex;
         align-items: baseline;
-        gap: 0.9rem;
+        gap: 0.85rem;
         margin-bottom: 0.3rem;
-        border-bottom: 2px solid var(--ink);
-        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--ink);
+        padding-bottom: 0.55rem;
       }
+      /* Set as a folio number rather than as a heading: tabular so 01
+         through 07 all occupy the same width down the page. */
       .cat-index {
-        font-family: "Courier New", monospace;
-        font-size: 0.85rem;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        font-weight: 600;
         color: var(--rust);
-        letter-spacing: 0.05em;
+        letter-spacing: 0.1em;
+        font-variant-numeric: tabular-nums;
       }
       .cat-head h2 {
-        font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+        font-size: clamp(1.6rem, 3.4vw, 2.2rem);
         margin: 0;
         font-weight: 700;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.018em;
       }
       .cat-count {
-        font-family: "Courier New", monospace;
-        font-size: 0.75rem;
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
         color: var(--muted);
         margin-left: auto;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
       }
 
       .subgroup {
-        margin-top: 1.7rem;
+        margin-top: 2rem;
       }
       .subgroup-label {
-        font-family: "Courier New", monospace;
-        font-size: 0.7rem;
-        letter-spacing: 0.18em;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        font-weight: 600;
+        letter-spacing: 0.19em;
         text-transform: uppercase;
         color: var(--pine);
-        margin-bottom: 0.7rem;
+        margin-bottom: 0.8rem;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.7rem;
       }
       .subgroup-label::after {
         content: "";
         flex: 1;
         height: 1px;
-        background: var(--kraft);
+        background: var(--line);
       }
 
       .card-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-        gap: 0.7rem;
+        grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+        gap: 0.85rem;
         /* Cards take their natural height rather than stretching to match the
            tallest card in their row. The masonry script then pulls each card
            up into the first free slot; without JS they just stay top-aligned,
@@ -774,67 +976,96 @@
         row-gap: 0;
       }
 
+      /* The pine edge stays — it is the card's signature — but it is an
+         inset shadow now rather than a border-left. An inset follows the
+         border-radius, where a 3px border of a different colour meets the
+         1px hairline in a mitred diagonal at both left corners, which is
+         exactly the join that gives a rounded card away as an accident. */
       .card {
         background: var(--paper-card);
-        border: 1px solid var(--kraft-line);
-        border-left: 3px solid var(--pine);
-        border-radius: 2px;
-        padding: 0.85rem 1rem 0.9rem;
-        box-shadow: var(--shadow);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        padding: 0.95rem 1.05rem 1rem 1.15rem;
+        box-shadow:
+          inset 3px 0 0 var(--pine),
+          var(--elev-1);
         transition:
-          transform 0.12s ease,
-          box-shadow 0.12s ease,
-          border-left-color 0.12s ease;
+          transform var(--t-fast) var(--ease),
+          box-shadow var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease);
         display: flex;
         flex-direction: column;
-        gap: 0.35rem;
+        gap: 0.4rem;
       }
       .card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px var(--shadow-med);
-        border-left-color: var(--rust);
+        box-shadow:
+          inset 3px 0 0 var(--rust),
+          var(--elev-2);
+      }
+      /* Tabbing through a card's phone numbers and links used to move the
+         focus ring across a card with no other sign of which entry it was
+         in. The card now lights with it. */
+      .card:focus-within {
+        box-shadow:
+          inset 3px 0 0 var(--rust),
+          var(--elev-2);
       }
       .card-name {
-        font-size: 1rem;
+        font-size: 1.02rem;
         font-weight: 700;
-        line-height: 1.3;
+        line-height: 1.28;
+        letter-spacing: -0.008em;
         color: var(--ink);
       }
       .card-row {
-        font-family: "Courier New", monospace;
-        font-size: 0.8rem;
-        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 0.775rem;
+        color: var(--body);
         display: flex;
-        gap: 0.45rem;
+        gap: 0.5rem;
         align-items: baseline;
-        line-height: 1.4;
+        line-height: 1.5;
       }
       .card-row .glyph {
         color: var(--pine);
         flex-shrink: 0;
         width: 1em;
+        opacity: 0.85;
       }
+      /* Underlined by a border rather than text-decoration so the rule
+         clears the descenders; kept off the ink so a card of six phone
+         numbers is not six ruled lines. */
       .card-row a {
         color: var(--pine-deep);
         text-decoration: none;
-        border-bottom: 1px solid var(--kraft);
+        border-bottom: 1px solid var(--line);
         word-break: break-word;
+        transition:
+          color var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease);
       }
       .card-row a:hover {
         color: var(--rust);
         border-bottom-color: var(--rust);
       }
+      /* Tinted, not outlined. Nearly every card carries one of these and
+         it repeats the subgroup heading a few lines above, so it is a
+         label on the entry, not a second border around it. */
       .card-tag {
         align-self: flex-start;
-        margin-top: 0.15rem;
-        font-family: "Courier New", monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.08em;
+        margin-top: 0.1rem;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.09em;
         text-transform: uppercase;
-        color: var(--tab-amber);
-        border: 1px solid var(--tab-amber);
-        padding: 0.12rem 0.45rem;
-        border-radius: 2px;
+        color: var(--amber-ink);
+        background: var(--tint-amber);
+        border: 0;
+        padding: 0.24rem 0.55rem;
+        border-radius: var(--r-pill);
+        line-height: 1;
       }
 
       .badge-row {
@@ -844,38 +1075,46 @@
         align-items: center;
       }
       .badge-extra {
-        font-family: "Courier New", monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.02em;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
         color: var(--rust);
-        border: 1px solid var(--rust);
-        padding: 0.12rem 0.45rem;
-        border-radius: 2px;
+        background: var(--tint-rust);
+        border: 0;
+        padding: 0.24rem 0.55rem;
+        border-radius: var(--r-pill);
+        line-height: 1;
         white-space: nowrap;
       }
+      /* The dashed outline stays: it is the one badge that says a card is
+         a person rather than a business, and a dashed edge is how the
+         page has always drawn "provisional". */
       .badge-individual {
         align-self: flex-start;
-        font-family: "Courier New", monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.06em;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
         color: var(--rust);
         border: 1px dashed var(--rust);
         line-height: 1;
-        padding: 0.25rem 0.45rem;
-        border-radius: 2px;
+        padding: 0.26rem 0.55rem;
+        border-radius: var(--r-pill);
         margin-top: 0.3rem;
       }
 
       .card-price {
-        font-family: "Courier New", monospace;
-        font-size: 0.8rem;
+        font-family: var(--mono);
+        font-size: 0.775rem;
         color: var(--pine-deep);
         font-weight: 700;
+        font-variant-numeric: tabular-nums;
         display: flex;
-        gap: 0.45rem;
+        gap: 0.5rem;
         align-items: baseline;
-        line-height: 1.4;
+        line-height: 1.5;
       }
       .card-price .glyph {
         color: var(--rust);
@@ -885,14 +1124,14 @@
 
       .app-links {
         display: flex;
-        gap: 0.6rem;
-        font-family: "Courier New", monospace;
-        font-size: 0.75rem;
+        gap: 0.7rem;
+        font-family: var(--mono);
+        font-size: 0.73rem;
       }
       .app-links a {
         color: var(--pine-deep);
         text-decoration: none;
-        border-bottom: 1px solid var(--kraft);
+        border-bottom: 1px solid var(--line);
       }
       .app-links a:hover {
         color: var(--rust);
@@ -916,23 +1155,29 @@
         text-align: center;
         padding: 4rem 1rem;
         color: var(--muted);
-        font-family: "Courier New", monospace;
-        font-size: 0.9rem;
+        font-family: var(--mono);
+        font-size: 0.85rem;
         display: none;
       }
 
+      /* The disclaimer and the licence block are the longest prose on the
+         page and were set to the full window — better than 200 characters
+         a line on a wide screen. The measure is held by padding rather
+         than by a max-width so the rule above it still runs edge to edge,
+         the way it always has. */
       footer {
         text-align: center;
-        padding: 2.5rem 1.5rem 3.5rem;
-        font-family: "Courier New", monospace;
-        font-size: 0.72rem;
+        padding: 3rem max(1.5rem, calc((100% - 680px) / 2)) 3.5rem;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        line-height: 1.65;
         color: var(--muted);
-        border-top: 1px solid var(--kraft);
+        border-top: 1px solid var(--line);
       }
       footer a {
         color: var(--pine-deep);
         text-decoration: none;
-        border-bottom: 1px solid var(--kraft);
+        border-bottom: 1px solid var(--line);
       }
       footer a:hover {
         color: var(--rust);
@@ -967,38 +1212,48 @@
         max-width: 100%;
         box-sizing: border-box;
         white-space: nowrap;
-        font-family: "Courier New", monospace;
-        font-size: clamp(0.55rem, 2.6vw, 0.75rem);
-        letter-spacing: 0.06em;
+        font-family: var(--mono);
+        font-size: clamp(0.55rem, 2.6vw, 0.72rem);
+        font-weight: 600;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        padding: 0.55rem clamp(0.6rem, 3vw, 1.1rem);
-        border: 1.5px solid var(--pine);
+        padding: 0.7rem clamp(0.8rem, 3vw, 1.4rem);
+        border: 1px solid var(--pine);
         background: var(--pine);
         color: var(--paper-card);
-        border-radius: 3px;
+        border-radius: var(--r-sm);
         cursor: pointer;
-        margin: 0 auto 1rem;
+        margin: 0 auto 1.1rem;
+        box-shadow: var(--elev-1);
         transition:
-          background 0.15s,
-          border-color 0.15s;
+          background var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          box-shadow var(--t-mid) var(--ease),
+          transform var(--t-fast) var(--ease);
       }
       .download-btn:hover {
         background: var(--pine-deep);
         border-color: var(--pine-deep);
+        transform: translateY(-1px);
+        box-shadow: var(--elev-2);
+      }
+      .download-btn:active {
+        transform: translateY(0);
+        box-shadow: var(--elev-1);
       }
       .offline-notice {
         width: fit-content;
         max-width: min(90vw, 480px);
-        margin: 0 auto 1rem;
+        margin: 0 auto 1.1rem;
         text-align: center;
-        font-family: "Courier New", monospace;
-        font-size: 0.7rem;
+        font-family: var(--mono);
+        font-size: 0.68rem;
         letter-spacing: 0.02em;
-        line-height: 1.5;
+        line-height: 1.55;
         color: var(--muted);
-        padding: 0.55rem 1.1rem;
-        border: 1.5px dashed var(--kraft-line);
-        border-radius: 3px;
+        padding: 0.65rem 1.1rem;
+        border: 1px dashed var(--kraft-line);
+        border-radius: var(--r-sm);
       }
       @media (prefers-color-scheme: dark) {
         .download-btn {
@@ -1018,10 +1273,10 @@
         max-width: min(90vw, 640px);
         margin: 0 auto 0.6rem;
         text-align: center;
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.68rem;
         letter-spacing: 0.02em;
-        line-height: 1.5;
+        line-height: 1.55;
         color: var(--muted);
         opacity: 0.85;
       }
@@ -1036,22 +1291,27 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.6rem;
+        gap: 0.65rem;
         width: fit-content;
         max-width: calc(100vw - 3rem);
-        margin: 0 auto 1.8rem;
-        padding: 0 1.5rem;
+        margin: 0 auto 2rem;
+        padding: 0.4rem 1.5rem;
+        border-radius: var(--r-pill);
         cursor: pointer;
-        font-family: "Courier New", monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.03em;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.02em;
         color: var(--muted);
+        transition: color var(--t-fast) var(--ease);
+      }
+      .personal-toggle-wrap:hover {
+        color: var(--muted-strong);
       }
       .switch {
         position: relative;
         display: inline-block;
-        width: 34px;
-        height: 19px;
+        width: 38px;
+        height: 22px;
         flex-shrink: 0;
       }
       .switch input {
@@ -1064,30 +1324,36 @@
         position: absolute;
         inset: 0;
         background: var(--kraft);
-        border: 1.3px solid var(--kraft-line);
-        border-radius: 999px;
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
         transition:
-          background 0.15s,
-          border-color 0.15s;
+          background var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease);
       }
       .switch-track::before {
         content: "";
         position: absolute;
-        width: 13px;
-        height: 13px;
+        width: 16px;
+        height: 16px;
         left: 2px;
         top: 2px;
         background: var(--paper-card);
         border-radius: 50%;
-        transition: transform 0.15s;
-        box-shadow: 0 1px 3px var(--shadow-med);
+        transition: transform var(--t-mid) var(--ease);
+        box-shadow: var(--elev-1);
       }
       .switch input:checked + .switch-track {
         background: var(--pine);
         border-color: var(--pine);
       }
       .switch input:checked + .switch-track::before {
-        transform: translateX(15px);
+        transform: translateX(16px);
+      }
+      /* The input itself is a zero-size box behind the track, so the ring
+         has to be moved onto the thing the reader can actually see. */
+      .switch input:focus-visible + .switch-track {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
       }
 
       @media (max-width: 560px) {
@@ -1148,24 +1414,25 @@
         right: 1.1rem;
         bottom: 1.1rem;
         z-index: 20;
-        width: 42px;
-        height: 42px;
+        width: 44px;
+        height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1.5px solid var(--kraft-line);
+        border: 1px solid var(--line);
         border-radius: 50%;
         background: var(--paper-card);
         color: var(--rust);
-        box-shadow: 0 2px 8px var(--shadow-med);
+        box-shadow: var(--elev-2);
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
         transition:
-          opacity 0.18s,
-          visibility 0.18s,
-          transform 0.15s,
-          border-color 0.15s;
+          opacity 0.18s var(--ease),
+          visibility 0.18s var(--ease),
+          transform var(--t-fast) var(--ease),
+          box-shadow var(--t-mid) var(--ease),
+          border-color var(--t-fast) var(--ease);
       }
       .to-top.to-top-shown {
         opacity: 1;
@@ -1179,6 +1446,7 @@
         .to-top:hover {
           transform: translateY(-2px);
           border-color: var(--rust);
+          box-shadow: var(--elev-3);
         }
       }
 
@@ -1201,8 +1469,8 @@
         .card-row.addr-copy:hover > span:not(.glyph) {
           color: var(--ink);
           background: var(--tint-pine);
-          box-shadow: 0 0 0 3px var(--tint-pine);
-          border-radius: 2px;
+          box-shadow: 0 0 0 4px var(--tint-pine);
+          border-radius: var(--r-xs);
         }
         .card-row.addr-copy:hover > .glyph {
           color: var(--rust);
@@ -1226,16 +1494,17 @@
         bottom: 1.6rem;
         z-index: 50;
         max-width: calc(100vw - 2rem);
-        font-family: "Courier New", monospace;
-        font-size: 0.72rem;
-        letter-spacing: 0.05em;
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
         color: var(--paper-card);
         background: var(--pine-deep);
-        border: 1px solid var(--kraft-line);
-        border-radius: 3px;
-        padding: 0.45rem 0.8rem;
-        box-shadow: 0 2px 10px var(--shadow-strong);
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
+        padding: 0.5rem 0.95rem;
+        box-shadow: var(--elev-3);
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -1313,13 +1582,13 @@
         width: min(920px, 100%);
         height: min(680px, 100%);
         background: var(--paper-card);
-        border: 1px solid var(--kraft-line);
-        /* The download button's 3px reads as "slightly rounded" because it
-           is a small box; the same 3px on something this size disappears.
+        border: 1px solid var(--line);
+        /* --r-sm reads as "slightly rounded" because the things wearing it
+           are small boxes; the same 7px on something this size disappears.
            This is that corner scaled up to the panel. overflow:hidden is
            what makes the map, the head and the credit line follow it. */
-        border-radius: 12px;
-        box-shadow: 0 6px 30px var(--shadow-strong);
+        border-radius: 18px;
+        box-shadow: var(--elev-3);
         overflow: hidden;
         transition:
           width 0.28s,
@@ -1354,92 +1623,102 @@
           transition: none;
         }
       }
-      .mapview-head {
-        display: flex;
-        align-items: baseline;
-        gap: 0.8rem;
-        padding: 0.7rem 0.9rem;
-        border-bottom: 1px solid var(--kraft);
-        background: var(--tint-pine-bg);
+      /* ---- Waiting for a name ------------------------------------------
+         A picked point is named by one reverse-geocode, which takes about
+         as long as the network takes. Standing the coordinates in the
+         name's place meanwhile read as the answer — and then turned into
+         a different answer a second later, which is the one thing a line
+         that says what you just picked must not do. So the line shimmers
+         instead, and the coordinates keep the line below, where they are
+         true before and after.
+
+         Two backgrounds on one box: a still tint, and a narrow highlight
+         swept across it by animating background-position. Nothing
+         reflows, nothing repaints outside the bar. */
+      .mapview-skel {
+        display: block;
+        width: 11ch;
+        max-width: 100%;
+        height: 0.82em;
+        margin: 0.2em 0;
+        border-radius: var(--r-xs);
+        background:
+          linear-gradient(
+              90deg,
+              transparent 0%,
+              var(--skel-hi) 50%,
+              transparent 100%
+            )
+            no-repeat,
+          var(--skel);
+        background-size: 65% 100%;
+        animation: mapviewShimmer 1.3s var(--ease) infinite;
       }
-      /* The head says what is currently picked out on the map, which for a
-         freshly opened panel is the entry the reader came from and after
-         that is whatever they tapped. With nothing picked there is nothing
-         for it to say, so the title, the address under it and both ways out
-         go away together — the wrapper stays, holding the close button over
-         on the right where it was. */
-      .mapview-titlewrap {
-        flex: 1;
-        min-width: 0;
+      @keyframes mapviewShimmer {
+        from {
+          background-position: -70% 0;
+        }
+        to {
+          background-position: 170% 0;
+        }
       }
-      .mapview-title {
-        font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--ink);
+      /* The global reduced-motion rule switches off transitions, not
+         animations, so this one has to say so itself. The bar stays as
+         the tint alone, which still reads as "not the answer yet". */
+      @media (prefers-reduced-motion: reduce) {
+        .mapview-skel {
+          animation: none;
+        }
+      }
+      /* The dialog is named by its title, so that element cannot go quiet
+         for the length of a lookup: the shimmer is what a reader who can
+         see it gets in place of this line. */
+      .mapview-vh {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
         overflow: hidden;
-        text-overflow: ellipsis;
+        clip-path: inset(50%);
         white-space: nowrap;
+        border: 0;
       }
-      .mapview-sub {
-        font-family: "Courier New", monospace;
-        font-size: 0.66rem;
-        letter-spacing: 0.03em;
-        color: var(--muted);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .mapview-sub:empty {
-        display: none;
-      }
-      .mapview-title.is-off,
-      .mapview-sub.is-off,
-      .mapview-actions.is-off {
-        display: none;
-      }
-      /* Two ways out of the panel, deliberately unequal. Yandex is the map
-         this index is compiled against and the one that actually knows
-         Vanadzor, so it is the filled button, cut from the same cloth as
-         the footer's download button; handing the place to whatever other
-         maps app the reader keeps is the outlined one beside it, the same
-         size and shape but plainly the quieter of the two. */
-      .mapview-actions {
-        flex-shrink: 0;
-        /* Centred rather than left on the head's baseline: these are boxes
-           now, and a baseline runs through their text rather than through
-           the box, which hangs them below the title. */
-        align-self: center;
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-      }
+      /* Two ways out, deliberately unequal. Yandex is the map this index
+         is compiled against and the one that actually knows Vanadzor, so
+         it is the filled button, cut from the same cloth as the footer's
+         download button; handing the place to whatever other maps app the
+         reader keeps is the outlined one beside it, the same size and
+         shape but plainly the quieter of the two. Both live at the foot
+         of the card now — there is nowhere else left for them to be. */
       .mapview-out {
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
         white-space: nowrap;
-        font-family: "Courier New", monospace;
-        font-size: 0.68rem;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        font-weight: 600;
         line-height: 1.2;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.07em;
         text-transform: uppercase;
         text-decoration: none;
         color: var(--pine-deep);
         background: none;
-        border: 1.5px solid var(--kraft-line);
-        border-radius: 7px;
-        padding: 0.5rem 0.8rem;
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        padding: 0.52rem 0.85rem;
         cursor: pointer;
         transition:
-          background 0.15s,
-          border-color 0.15s,
-          color 0.15s;
+          background var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease);
       }
       .mapview-out:hover {
         color: var(--rust);
         border-color: var(--rust);
+        background: var(--tint-rust);
       }
       /* The page marks keyboard focus in rust wherever it marks it; the
          browser's own ring is a blue box that belongs to no palette here,
@@ -1452,7 +1731,7 @@
         color: var(--paper-card);
         background: var(--pine);
         border-color: var(--pine);
-        box-shadow: 0 2px 8px var(--shadow-med);
+        box-shadow: var(--elev-1);
       }
       .mapview-out-primary:hover {
         color: var(--paper-card);
@@ -1494,14 +1773,14 @@
       }
       .mapview-confirm-box {
         width: min(380px, 100%);
-        padding: 1rem 1.1rem 0.9rem;
+        padding: 1.1rem 1.2rem 1rem;
         background: var(--paper-card);
-        border: 1px solid var(--kraft-line);
-        border-radius: 10px;
-        box-shadow: 0 6px 30px var(--shadow-strong);
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
+        box-shadow: var(--elev-3);
       }
       .mapview-confirm-title {
-        font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+        font-family: var(--serif);
         font-size: 1rem;
         font-weight: 700;
         color: var(--ink);
@@ -1521,9 +1800,15 @@
         gap: 0.8rem;
       }
       /* Shape and hover come from the shared rule down with the map tools,
-         which this matches; only its place in the head is set here. */
+         which this matches; only its corner is set here. It floats free
+         of both the plate and the tool column: it is the only control in
+         the panel that is about the panel rather than about the map or
+         about what is picked on it, and it is the one that must still be
+         there when everything else has gone. */
       .mapview-close {
-        align-self: center;
+        position: absolute;
+        top: 0.65rem;
+        right: 0.65rem;
       }
 
       .mapview-body {
@@ -1601,39 +1886,55 @@
         opacity: 1;
       }
 
-      /* Two markers, both anchored by their tip. The square is rotated a
-         quarter turn about its own centre, which swings the one unrounded
-         corner to the bottom — 14.14px below the centre, that being half
-         the diagonal of a 20px square. The margins hang the whole thing
-         that far above the point it marks.
+      /* Two markers, drawn as two different claims and anchored two
+         different ways. Both are placed by writing the point's own
+         coordinate into left/top (see placePin); the margins below are
+         what decide which part of the mark lands on it.
 
-         Whichever one is currently picked out is the one the head is
-         describing; the other dims to say so. */
+         Whichever one is currently picked out is the one the card is
+         about; the other dims to say so. */
       .mapview-pin {
         position: absolute;
         width: 20px;
         height: 20px;
         padding: 0;
-        margin: -24.14px 0 0 -10px;
         -webkit-appearance: none;
         appearance: none;
-        border-radius: 50% 50% 50% 0;
         border: 2px solid var(--paper-card);
         box-shadow: 0 1px 4px var(--shadow-strong);
-        transform: rotate(-45deg);
         cursor: pointer;
       }
+      /* The entry's: a teardrop, anchored by its tip, standing above what
+         it labels the way a pin does. The square is rotated a quarter
+         turn about its own centre, which swings the one unrounded corner
+         to the bottom — 14.14px below the centre, that being half the
+         diagonal of a 20px square. The margins hang the whole thing that
+         far above the point it marks. (It is only drawn at all for an
+         entry with no marker of its own — a personal contact.) */
       .mapview-pin-entry {
+        margin: -24.14px 0 0 -10px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
         background: var(--rust);
       }
+      /* The picked point's: a dot, sitting on its coordinates rather than
+         hanging over them. A pin is a label pointing at somewhere that
+         was already there and already named; this is a place the reader
+         made by pressing exactly here, and the only thing it has to say
+         is *here*. So it marks the spot instead of gesturing at it, and
+         it is centred on the coordinate rather than hung above it. */
       .mapview-pin-pick {
+        margin: -10px 0 0 -10px;
+        border-radius: 50%;
         background: var(--pine-deep);
       }
       .mapview-pin.is-off {
         opacity: 0.45;
       }
-      /* The pin is rotated, so an outline drawn on it would come out on the
-         diagonal. The ring goes on as a second shadow instead. */
+      /* The entry's pin is rotated, so an outline drawn on it would come
+         out on the diagonal; and neither of them can take one cleanly at
+         these sizes anyway. The ring goes on as a second shadow instead,
+         the same trick the map tools use. */
       .mapview-pin:focus-visible {
         outline: none;
         box-shadow:
@@ -1729,7 +2030,7 @@
          how much it is holding. */
       .mapview-cluster {
         background: var(--pine);
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.7rem;
         font-weight: 700;
         letter-spacing: 0.02em;
@@ -1768,28 +2069,131 @@
       .mapview-pop {
         position: absolute;
         z-index: 2;
-        width: min(320px, calc(100% - 1.6rem));
-        max-height: 62%;
+        width: min(344px, calc(100% - 1.6rem));
+        max-height: 66%;
         display: flex;
         flex-direction: column;
         background: var(--paper-card);
         border: 1.5px solid var(--kraft-line);
-        border-radius: 10px;
-        box-shadow: 0 6px 24px var(--shadow-strong);
+        border-radius: var(--r-md);
+        box-shadow: var(--elev-3);
+        /* Deliberately not overflow:hidden, which would be the obvious
+           way to make the head and the footer take the frame's corners:
+           the tail and the close button both hang outside this box, and
+           clipping the card would clip the two things that say which
+           marker it belongs to and how to put it away. They round
+           themselves instead, by the frame's radius less its border. */
+      }
+      /* The strip that names the category, carrying the same mark the
+         marker below it carries. It is what makes the card read as this
+         pin's record rather than as a fragment of the page floating over
+         the map — and it is the only part of the card that says which of
+         seven kinds of thing this is without the reader parsing a tag. */
+      .mapview-pop-head {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+        padding: 0.5rem 0.7rem;
+        border-bottom: 1px solid var(--line);
+        border-radius: calc(var(--r-md) - 1.5px) calc(var(--r-md) - 1.5px) 0 0;
+        background: var(--tint-pine-bg);
+      }
+      /* Cut from whatever the card is standing on: rust and the
+         category's mark over an entry's marker, pine over a point the
+         reader picked — the same two colours those two things are drawn
+         in out on the map.
+
+         A point gets a plain dot rather than a mark, because there is
+         nothing for a mark to say: an entry's disc carries the sign of
+         one of seven kinds of place, and a tapped point is not a kind of
+         anything. Drawn small inside the same 22px slot, so the label
+         beside it starts at the same place in both fillings. */
+      .mapview-pop-mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--rust);
+        color: var(--paper-card);
+      }
+      .mapview-pop-mark.is-point {
+        background: none;
+      }
+      .mapview-pop-mark.is-point::before {
+        content: "";
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--pine-deep);
+      }
+      .mapview-pop-mark svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+      }
+      .mapview-pop-cat {
+        flex: 1;
+        min-width: 0;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        color: var(--muted-strong);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* ---- A picked point's card ---------------------------------------
+         The other thing the one card can hold. An entry brings its whole
+         listing with it; a point has only what Nominatim can say about
+         it, so these two lines are the whole of it — set to match the
+         entry clone's name and rows, because they are the same card. */
+      .mapview-pop-name {
+        font-family: var(--serif);
+        font-size: 1.12rem;
+        font-weight: 700;
+        line-height: 1.24;
+        letter-spacing: -0.008em;
+        color: var(--ink);
+      }
+      .mapview-pop-sub {
+        margin-top: 0.35rem;
+        font-family: var(--mono);
+        font-size: 0.775rem;
+        line-height: 1.5;
+        color: var(--body);
+        word-break: break-word;
       }
       .mapview-pop-scroll {
+        flex: 1;
+        min-height: 0;
         overflow-y: auto;
-        padding: 0.5rem;
+        padding: 0.7rem 0.75rem 0.8rem;
       }
       /* The clone brings the card's own frame with it, which would be a
-         box drawn inside a box. */
+         box drawn inside a box — including its pine edge, which the
+         popup's own head strip now speaks for. Its padding goes too: the
+         scroller supplies that, and the clone's would double it. */
       .mapview-pop .card {
         border: 0;
         box-shadow: none;
         background: none;
         margin: 0;
+        padding: 0;
         width: auto;
         break-inside: auto;
+      }
+      /* The entry's name is the heading of a record here, not one name
+         among a grid of them. */
+      .mapview-pop .card .card-name {
+        font-size: 1.12rem;
+        line-height: 1.24;
       }
       /* In the page a card answers the pointer because it is one of a grid
          of them and the reader is still choosing; here it is the one entry
@@ -1832,40 +2236,55 @@
          clone no longer carries, and they lead to this entry whatever else
          is picked behind it. Stacked rather than side by side: the card is
          320px at its widest and the two of them do not fit across it. */
+      /* A footer of the card, pinned, rather than the last thing inside
+         its scroller: an entry with a long note used to push both buttons
+         off the bottom, so the reader had to scroll a card they had
+         already read to reach the button they wanted. Stacked rather than
+         side by side — the card is 344px at its widest and the two of
+         them do not fit across it. */
       .mapview-pop-actions {
         display: flex;
         flex-direction: column;
+        flex-shrink: 0;
         gap: 0.4rem;
-        margin-top: 0.7rem;
-        padding-top: 0.7rem;
-        border-top: 1px dashed var(--kraft-line);
+        padding: 0.6rem 0.75rem 0.7rem;
+        border-top: 1px solid var(--line);
+        border-radius: 0 0 calc(var(--r-md) - 1.5px) calc(var(--r-md) - 1.5px);
+        background: var(--tint-pine-bg);
       }
+      /* At the end of the head strip, inside the card. It used to be a
+         disc pushed 10px past the top right corner, hanging over the map
+         — which cost the tail a doubled clearance at that one corner
+         (POP_TAIL_SHUT, now gone), stopped the card ever clipping to its
+         own frame, and put a second floating round button within a few
+         pixels of the panel's own close button in the corner beyond it.
+         In the strip it reads as what it is: the card's own control,
+         belonging to the card, in the card's one row of chrome. */
       .mapview-pop-close {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        width: 26px;
-        height: 26px;
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        margin: -0.15rem -0.2rem -0.15rem 0;
         padding: 0;
         display: flex;
         align-items: center;
         justify-content: center;
+        border: 0;
         border-radius: 50%;
-        border: 1.5px solid var(--kraft-line);
-        background: var(--paper-card);
-        color: var(--ink);
+        background: none;
+        color: var(--muted);
         cursor: pointer;
-        box-shadow: 0 2px 8px var(--shadow-med);
+        transition:
+          background var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease);
+      }
+      .mapview-pop-close svg {
+        width: 15px;
+        height: 15px;
       }
       .mapview-pop-close:hover {
-        border-color: var(--pine);
-      }
-      .mapview-pop-close:focus-visible {
-        outline: none;
-        border-color: var(--rust);
-        box-shadow:
-          0 2px 8px var(--shadow-med),
-          0 0 0 3px var(--rust);
+        background: var(--tint-rust);
+        color: var(--rust);
       }
       /* The tail, a square stood on its corner with two of its sides
          inked, tucked under the popup's own edge so the join disappears.
@@ -1882,6 +2301,15 @@
         background: var(--paper-card);
         border: 1.5px solid var(--kraft-line);
         transform: rotate(45deg);
+      }
+      /* Leaving the top or the bottom edge, the tail leaves from the head
+         strip or the footer rather than from the card's paper, so it
+         carries their tint too or the join shows. */
+      .mapview-pop.tail-top .mapview-pop-tail,
+      .mapview-pop.tail-bottom .mapview-pop-tail {
+        background:
+          linear-gradient(var(--tint-pine-bg), var(--tint-pine-bg)),
+          var(--paper-card);
       }
       .mapview-pop.tail-bottom .mapview-pop-tail {
         bottom: -7px;
@@ -1908,10 +2336,24 @@
          on it: the two zoom steps, then — set apart by a gap, since they
          answer different questions — finding the reader and dropping the
          current point. */
+      /* Down in the corner the thumb already rests in, and out from under
+         the close button, which now has the opposite corner to itself.
+         Anchored to the bottom so the column grows upward: the locate and
+         clear buttons come and go, and anchored to the top they moved the
+         two zoom steps every time they did. */
+      /* Above the attribution rather than beside it. Sharing the bottom
+         line cost the credit chip the column's whole width — about 74px
+         — which on a phone is the difference between one line and two,
+         and the wrap was happening on the widest phones as well as the
+         narrow ones. Raised, the chip has the full width of the map and
+         the buttons lose nothing: they are still in the corner the thumb
+         rests in, an inch further up it. The offset clears a credit that
+         has wrapped to two lines, which is what a 320px screen still
+         does with it. */
       .mapview-tools {
         position: absolute;
-        top: 0.7rem;
-        right: 0.7rem;
+        right: 0.65rem;
+        bottom: 3.7rem;
         display: flex;
         flex-direction: column;
         gap: 6px;
@@ -1930,16 +2372,16 @@
         height: 38px;
         padding: 0;
         border-radius: 50%;
-        border: 1.5px solid var(--kraft-line);
+        border: 1px solid var(--line);
         background: var(--paper-card);
         color: var(--ink);
         cursor: pointer;
-        box-shadow: 0 2px 8px var(--shadow-med);
+        box-shadow: var(--elev-2);
         transition:
-          background 0.15s,
-          border-color 0.15s,
-          color 0.15s,
-          transform 0.15s;
+          background var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          transform var(--t-mid) var(--ease);
       }
       .mapview-tools button:hover:enabled,
       .mapview-close:hover {
@@ -1965,8 +2407,11 @@
       .mapview-close svg {
         display: block;
       }
+      /* The gap between the two groups. It hangs below its element
+         because the column is built top-down as clear, locate, zoom in,
+         zoom out — see the append order in build(). */
       .mapview-tools .is-apart {
-        margin-top: 10px;
+        margin-bottom: 10px;
       }
       @media (prefers-reduced-motion: reduce) {
         .mapview-tools button,
@@ -2014,21 +2459,29 @@
       /* Says the map can be tapped, since nothing about a map advertises
          that on its own. It goes for good once a reader has picked a point,
          which is the only thing it was there to teach. */
+      /* Top left, which the plate used to have and nothing has now. It
+         was stacked over the credit down in the other corner, where it
+         had to be given an offset that cleared a one-line attribution
+         and would have been wrong the moment that line wrapped. Up here
+         it needs no such arithmetic, it is out of the way of the corner
+         the reader's thumb works in, and an invitation to tap the map
+         reads better where the eye starts than where it stops. */
       .mapview-hint {
         position: absolute;
-        left: 0.6rem;
-        bottom: 0.6rem;
-        max-width: calc(100% - 1.2rem);
-        padding: 0.3rem 0.5rem;
-        font-family: "Courier New", monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.04em;
+        left: 0.65rem;
+        top: 0.65rem;
+        max-width: calc(100% - 4.6rem);
+        padding: 0.36rem 0.6rem;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--muted-strong);
         background: var(--paper-card);
-        border: 1.5px solid var(--kraft-line);
-        border-radius: 7px;
-        box-shadow: 0 2px 8px var(--shadow-med);
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
+        box-shadow: var(--elev-2);
         pointer-events: none;
       }
       .mapview-hint.is-off {
@@ -2078,38 +2531,69 @@
         justify-content: center;
         text-align: center;
         padding: 1rem;
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.72rem;
         letter-spacing: 0.05em;
         text-transform: uppercase;
         color: var(--muted);
         background: var(--paper);
       }
+      /* Along the foot of the map rather than on a bar under it. This is
+         OpenStreetMap's attribution and the tiles are only usable while
+         it is legible, so it is the one piece of floating chrome that is
+         never hidden and never covered — popBottomEdge() measures this
+         element and keeps the entry card above it, including when the
+         line wraps to two on a narrow panel. The scrim behind the text is
+         a gradient rather than a plate: it has to stay readable over a
+         map that could be any colour, without drawing a box on it. */
+      /* A chip in the map's bottom left corner, cut from the same paper
+         as the tool buttons and the hint above it, rather than the wash
+         across the whole foot of the map it was: a gradient band had to
+         be wide enough to stay legible over any tile, so it dimmed a
+         strip of the map the width of the panel to say two things that
+         take a few centimetres.
+
+         This is OpenStreetMap's attribution and the tiles are only
+         usable while it is legible, so unlike every other piece of
+         chrome here it never hides and is never covered — popBottomEdge
+         keeps the card above it. */
       .mapview-credit {
-        flex-shrink: 0;
-        padding: 0.5rem 0.9rem;
-        border-top: 1px solid var(--kraft);
-        font-family: "Courier New", monospace;
-        font-size: 0.62rem;
-        letter-spacing: 0.04em;
-        color: var(--muted);
+        position: absolute;
+        left: 0.65rem;
+        bottom: 0.65rem;
+        /* The whole width of the map, less its own margins: nothing
+           shares this line any more. It still shrink-wraps to its text
+           on anything wide enough — this is a ceiling, not a width. */
+        max-width: calc(100% - 1.3rem);
+        padding: 0.36rem 0.6rem;
+        font-family: var(--mono);
+        font-size: 0.6rem;
+        line-height: 1.45;
+        letter-spacing: 0.02em;
+        color: var(--muted-strong);
+        background: var(--paper-card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
+        box-shadow: var(--elev-2);
+      }
+      /* The pill has rounded ends, so a line long enough to wrap has to
+         square them off or the second line runs out past the curve. */
+      @media (max-width: 420px) {
+        .mapview-credit {
+          border-radius: var(--r-sm);
+        }
       }
       .mapview-credit a {
         color: inherit;
       }
 
-      /* Too narrow for name, link and close on one line. The head becomes a
-         two-row grid rather than a wrapping flex row: wrapping would carry
-         the close button down with the link, leaving the panel's one exit
-         floating in the middle of the header. Placed explicitly, it stays
-         in the top corner where it is on every other width, and only the
-         link moves to a line of its own.
-
-         The panel also gives up its margins here and takes the whole screen
-         bar a hairline of scrim: a map read at arm's length on a phone needs
-         every pixel, and the header it sits under says plainly enough that
-         this is a panel and not a page. Only the pair of links out moves to
-         a line of its own. */
+      /* The panel gives up its margins here and takes the whole screen
+         bar a hairline of scrim: a map read at arm's length on a phone
+         needs every pixel, and the card standing on it and the close
+         button in its corner say plainly enough that this is a panel and
+         not a page. Nothing else needs saying at this width — the card
+         is already sized against the map rather than against the window,
+         and the chrome is already in the corners. */
       @media (max-width: 640px) {
         .mapview {
           padding: 0.3rem;
@@ -2117,26 +2601,6 @@
         .mapview-panel {
           width: 100%;
           height: 100%;
-        }
-        .mapview-head {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 0.35rem 0.7rem;
-        }
-        .mapview-titlewrap {
-          grid-column: 1;
-          grid-row: 1;
-        }
-        .mapview-close {
-          grid-column: 2;
-          grid-row: 1;
-        }
-        .mapview-actions {
-          grid-column: 1 / -1;
-          grid-row: 2;
-          justify-self: start;
-          flex-wrap: wrap;
         }
       }
 
@@ -2155,7 +2619,7 @@
         scroll-margin-top: 5.5rem;
       }
       .about-head {
-        border-bottom: 2px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
         padding-bottom: 0.5rem;
         margin-bottom: 1.4rem;
         display: flex;
@@ -2170,7 +2634,7 @@
         letter-spacing: -0.01em;
       }
       .about-head .about-kicker {
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.7rem;
         letter-spacing: 0.18em;
         text-transform: uppercase;
@@ -2194,7 +2658,7 @@
       .about-prose a {
         color: var(--pine-deep);
         text-decoration: none;
-        border-bottom: 1px solid var(--kraft);
+        border-bottom: 1px solid var(--line);
       }
       .about-prose a:hover,
       .about-prose a:focus-visible {
@@ -2204,12 +2668,13 @@
       /* Civic constants, set as a ledger register to match the cards. */
       .about-facts {
         margin: 0;
-        padding: 1rem 1.2rem;
-        border: 1.5px solid var(--kraft-line);
-        border-radius: 3px;
+        padding: 1.15rem 1.3rem;
+        border: 1px solid var(--line);
+        border-radius: var(--r-md);
         background: var(--paper-card);
-        font-family: "Courier New", monospace;
-        font-size: 0.78rem;
+        box-shadow: var(--elev-1);
+        font-family: var(--mono);
+        font-size: 0.76rem;
         display: grid;
         grid-template-columns: auto minmax(0, 1fr);
         gap: 0.5rem 1rem;
@@ -2230,7 +2695,7 @@
       }
       .about-source {
         margin: 1.5rem 0 2.2rem;
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.66rem;
         letter-spacing: 0.08em;
         color: var(--muted);
@@ -2254,11 +2719,11 @@
         --water: #4a7a9b;
         max-width: 1080px;
         margin: 0 auto 2.6rem;
-        padding: 1.5rem 1.6rem 1.2rem;
-        border: 1.5px solid var(--kraft-line);
-        border-radius: 3px;
+        padding: 1.6rem 1.7rem 1.3rem;
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
         background: var(--paper-card);
-        box-shadow: var(--shadow);
+        box-shadow: var(--elev-1);
       }
       @media (prefers-color-scheme: dark) {
         .map-plate {
@@ -2277,7 +2742,7 @@
         height: auto;
       }
       .map-plate figcaption {
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.66rem;
         letter-spacing: 0.16em;
         text-transform: uppercase;
@@ -2290,28 +2755,34 @@
          under. */
       .map-plate .plate-open {
         display: block;
-        margin-top: 0.9rem;
-        padding: 0.4rem 0.7rem;
-        font-family: "Courier New", monospace;
-        font-size: 0.68rem;
-        letter-spacing: 0.08em;
+        margin-top: 1rem;
+        padding: 0.5rem 0.85rem;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        font-weight: 600;
+        letter-spacing: 0.09em;
         text-transform: uppercase;
         color: var(--pine-deep);
         background: none;
-        border: 1px solid var(--kraft-line);
-        border-radius: 2px;
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
         cursor: pointer;
+        transition:
+          color var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          background var(--t-fast) var(--ease);
       }
       .map-plate .plate-open:hover {
         color: var(--rust);
         border-color: var(--rust);
+        background: var(--tint-rust);
       }
       /* Attribution sits at the foot of the plate, left-aligned, the way a
          printed map carries its source line. */
       .map-plate .plate-credit {
         margin-top: 0.6rem;
         text-align: left;
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 0.6rem;
         letter-spacing: 0.08em;
         color: var(--muted);
@@ -2319,7 +2790,7 @@
       .map-plate .plate-credit a {
         color: inherit;
         text-decoration: none;
-        border-bottom: 1px solid var(--kraft);
+        border-bottom: 1px solid var(--line);
       }
       .map-plate .plate-credit a:hover {
         color: var(--rust);
@@ -2434,7 +2905,7 @@
         vector-effect: non-scaling-stroke;
       }
       .mp-en {
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 15px;
         letter-spacing: 0.14em;
         text-transform: uppercase;
@@ -2443,7 +2914,7 @@
       /* OSM's own place= classification — the only per-district fact it
          records beyond the name. Kentron has no OSM entry, so no line. */
       .mp-kind {
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 11px;
         letter-spacing: 0.1em;
         text-transform: uppercase;
@@ -2464,7 +2935,7 @@
       .mp-north text {
         stroke: none;
         fill: var(--muted);
-        font-family: "Courier New", monospace;
+        font-family: var(--mono);
         font-size: 15px;
         letter-spacing: 0.1em;
       }
@@ -12852,12 +13323,13 @@
 
         var overlay = null;
         var panelEl = null;
-        var titleWrap = null;
-        var titleEl = null;
-        var subEl = null;
-        var actions = null;
-        var yaLink = null;
-        var outBtn = null;
+        // Not a plate in the corner any more: what is picked out on the map
+        // is described by a card standing on the thing it describes, whether
+        // that is an entry of the index or a point the reader tapped. This
+        // is the one line that has to stay in the panel for a reader who
+        // cannot see either — the name of whatever is currently picked,
+        // announced but never drawn.
+        var sayEl = null;
         var clearBtn = null;
         var closeBtn = null;
         var mapEl = null;
@@ -12872,16 +13344,25 @@
         var meHalo = null;
         var spotsEl = null;
         var popupEl = null;
+        var popHead = null;
+        var popMark = null;
+        var popCat = null;
         var popScroll = null;
         var popTail = null;
         var popClose = null;
         var popActions = null;
         var popYa = null;
         var popOut = null;
-        // Which of the two "open in different maps" buttons the question is
-        // up for — the head's, or the card's.
+        // Which of the two things the one card can be about: "entry" for an
+        // entry of the index, cloned out of the page, and "point" for a
+        // place the reader tapped and Nominatim named. They never coexist —
+        // one card, two fillings — but a good deal below has to know which
+        // it is holding, starting with what a tap on the map then means.
+        var popKind = null;
+        var popHeldKind = null;
         var confirmFrom = null;
         var hintEl = null;
+        var creditEl = null;
         var note = null;
         var askBox = null;
         var goLink = null;
@@ -12976,6 +13457,10 @@
             popW = popupEl.offsetWidth;
             popH = popupEl.offsetHeight;
           }
+          // How much of the map's foot the attribution chip is standing on,
+          // measured from the map's bottom edge so the chip's own offset
+          // counts too. See popBottomEdge.
+          creditH = creditEl ? vh - creditEl.offsetTop : 0;
         }
         function viewLeft() {
           return cx - vw / 2;
@@ -13350,30 +13835,15 @@
             pick ? "Show the picked point" : "Picked point",
           );
           if (!on) {
-            titleEl.className = "mapview-title is-off";
-            subEl.className = "mapview-sub is-off";
-            actions.className = "mapview-actions is-off";
-            // The dialog is named by its title, and there isn't one now.
-            panelEl.removeAttribute("aria-labelledby");
-            panelEl.setAttribute("aria-label", "Map preview");
             closeConfirm();
+            sayEl.textContent = "";
           } else {
-            panelEl.removeAttribute("aria-label");
-            panelEl.setAttribute("aria-labelledby", "mapviewTitle");
-            var coords = coordText(on.lat, on.lon);
-            var name = on.name || coords;
-            titleEl.className = "mapview-title";
-            subEl.className = "mapview-sub";
-            actions.className = "mapview-actions";
-            titleEl.textContent = name;
-            subEl.textContent = on.addr || (on.name ? coords : "");
-            // The entry keeps its own Yandex page — an org listing with
-            // hours and a phone number behind it, which no pair of
-            // coordinates can reconstruct. A picked point has only the
-            // coordinates. The other way out is aimed when it is pressed
-            // instead, since either this button or the card's may be the
-            // one asking, and they can be pointing at different places.
-            yaLink.href = on.href || yandexPoint(on.lat, on.lon);
+            // Everything the reader can see about the selection is on the
+            // card standing over it. This is what is left for a reader who
+            // is being read to: the same line, spoken.
+            sayEl.textContent = on.pending
+              ? "Looking up this place…"
+              : on.name || coordText(on.lat, on.lon);
           }
           entryPin.className =
             "mapview-pin mapview-pin-entry" +
@@ -13384,6 +13854,12 @@
             "mapview-clear" +
             (locateBtn ? "" : " is-apart") +
             (on ? "" : " is-off");
+          // A point's card is redrawn from here, which is what runs when the
+          // geocoder finally answers and the shimmer has to become a name.
+          // An entry's card is not: it is a clone of something that has not
+          // changed. Guarded on the card being about *this* point, so a pick
+          // that has just been replaced does not redraw the new one's card.
+          if (popKind === "point" && popSpot === pick && pick) fillPoint(pick);
           // The gatherings depend on what is selected, so this may rebuild
           // them; layoutSpots decides, and does nothing if nothing changed.
           layoutSpots();
@@ -13406,8 +13882,15 @@
           sel = "pick";
           hintDone();
           placePin(pickPin, pick);
-          showSelection();
+          // Before the card is drawn, not after: lookup only marks the point
+          // as waiting and sets a timer, and the mark is what fillPoint reads
+          // to shimmer the name rather than draw the coordinates in its place
+          // for the second before the geocoder answers.
           lookup(pick);
+          showSelection();
+          // After showSelection, not before: it refreshes a point card that
+          // is already up, and there is no sense filling this one twice.
+          openPointPopup(pick);
         }
         // Clearing a picked point takes the pin with it; clearing the entry
         // leaves its pin behind, dimmed, since it is the reason the panel
@@ -13417,6 +13900,7 @@
           // Taking away what is picked takes the card with it, including
           // one waiting behind the dialog to come back.
           popHeld = null;
+          popHeldKind = null;
           if (sel === "pick") {
             pick = null;
             placePin(pickPin, null);
@@ -13485,6 +13969,7 @@
             spotsEl.appendChild(el);
             spots.push({
               card: card,
+              cat: card.getAttribute("data-cat"),
               lat: geo.lat,
               lon: geo.lon,
               name: name,
@@ -13816,6 +14301,7 @@
            page. */
         function openPopup(spot) {
           popSpot = spot;
+          popKind = "entry";
           while (popScroll.firstChild) {
             popScroll.removeChild(popScroll.firstChild);
           }
@@ -13837,10 +14323,78 @@
           }
           popScroll.appendChild(clone);
           popYa.href = spot.href || yandexPoint(spot.lat, spot.lon);
-          popScroll.appendChild(popActions);
+          // The strip takes the marker's own mark and its category's name.
+          // A category the icon table doesn't know draws a plain disc on the
+          // map, and gets a plain disc here for the same reason.
+          popStrip(catIcon(spot.cat), spot.cat || "", "entry");
+          popShow();
+        }
+        /* ---- The same card, over a point the reader picked ----------------
+           A tapped point used to be described by a plate in the panel's top
+           left corner, which meant the one thing on screen that said what
+           had just been picked was as far as possible from the pin saying
+           where. It is the same card as an entry's now, standing on its own
+           pin with its own tail: the name Nominatim gives it, the
+           coordinates under that, and the same two ways out. */
+        function openPointPopup(at) {
+          popSpot = at;
+          popKind = "point";
+          fillPoint(at);
+          popShow();
+        }
+        // The contents alone, so the geocoder answering can redraw the card
+        // in place rather than opening a second one over the first.
+        function fillPoint(at) {
+          while (popScroll.firstChild) popScroll.removeChild(popScroll.firstChild);
+          var coords = coordText(at.lat, at.lon);
+          var name = document.createElement("div");
+          name.className = "mapview-pop-name";
+          var sub = document.createElement("div");
+          sub.className = "mapview-pop-sub";
+          // While the geocoder is still being asked, the line where the name
+          // will go shimmers instead of standing in for the name with the
+          // coordinates — which read as the answer, and then turned into a
+          // different answer a second later. The coordinates keep the line
+          // below, where they are true before and after, and where the
+          // address replaces them when one arrives.
+          if (at.pending) {
+            name.className = "mapview-pop-name is-looking";
+            var bar = document.createElement("span");
+            bar.className = "mapview-skel";
+            bar.setAttribute("aria-hidden", "true");
+            name.appendChild(bar);
+            var say = document.createElement("span");
+            say.className = "mapview-vh";
+            say.textContent = "Looking up this place…";
+            name.appendChild(say);
+            sub.textContent = coords;
+          } else {
+            name.textContent = at.name || coords;
+            sub.textContent = at.addr || (at.name ? coords : "");
+          }
+          popScroll.appendChild(name);
+          if (sub.textContent) popScroll.appendChild(sub);
+          // A point has no listing behind it, only a place on the map.
+          popYa.href = yandexPoint(at.lat, at.lon);
+          popStrip(null, "Picked point", "point");
+          // Naming it changes its height, so the card has to be measured and
+          // stood again — but only once it is actually up.
+          if (popupEl.style.display !== "none") popShow();
+        }
+        // The head strip: a mark cut from the same drawing as the thing on
+        // the map below, and a word for what kind of thing it is.
+        function popStrip(mark, label, kind) {
+          while (popMark.firstChild) popMark.removeChild(popMark.firstChild);
+          if (mark) popMark.appendChild(mark);
+          popMark.className = "mapview-pop-mark is-" + kind;
+          popCat.textContent = label;
+        }
+        // Everything both fillings share: put it up, measure it, and stand
+        // it on its pin.
+        function popShow() {
           popupEl.style.display = "";
-          // Measured once, here, rather than on every frame of a pan: the
-          // content only changes when this runs.
+          // Measured here rather than on every frame of a pan: the content
+          // only changes when this runs.
           popW = popupEl.offsetWidth;
           popH = popupEl.offsetHeight;
           fitPopup();
@@ -13850,6 +14404,7 @@
           if (!popSpot) return;
           var held = popupEl.contains(document.activeElement);
           popSpot = null;
+          popKind = null;
           popupEl.style.display = "none";
           if (held) mapEl.focus();
         }
@@ -13861,11 +14416,37 @@
         // question was answered.
         function holdPopup() {
           var on = popSpot;
+          // Which filling it had, kept with it: closePopup forgets, and what
+          // comes back has to be built the same way it was — an entry is
+          // cloned from the page, a point is written out from its
+          // coordinates, and handing one to the other's builder is a crash.
+          var kind = popKind;
           closePopup();
           popHeld = on;
+          popHeldKind = kind;
+        }
+        function unholdPopup() {
+          if (!popHeld) return;
+          var back = popHeld;
+          var kind = popHeldKind;
+          popHeld = null;
+          popHeldKind = null;
+          if (kind === "point") openPointPopup(back);
+          else openPopup(back);
         }
         var POP_GAP = 20;
         var POP_EDGE = 8;
+        // The card never stands over the credit chip in the map's bottom
+        // left corner. That chip is OpenStreetMap's attribution and the
+        // tiles are only usable while it is legible, so the bottom margin
+        // is measured from the chip rather than fixed — it follows the line
+        // when it wraps on a narrow panel. Read in measure() rather than
+        // here: placePopup runs on every frame of a pan, and offsetHeight
+        // is a layout read.
+        var creditH = 0;
+        function popBottomEdge() {
+          return POP_EDGE + creditH;
+        }
         // If the card won't fit over its marker, the map moves rather than
         // the card: shoved into a corner it would still be over the marker
         // but no longer pointing at it, and the tail is the whole reason a
@@ -13895,10 +14476,11 @@
         }
         // How near a corner the tail's point may come, so it always leaves
         // from the flat part of an edge rather than off a rounded end.
+        // One distance for all four corners now. It used to be doubled at
+        // the top right, which the close button hung off the outside of;
+        // the button sits inside the head strip these days and nothing
+        // overhangs the card at all.
         var POP_TAIL = 16;
-        // ...except at the top right corner, which the close button hangs
-        // off: the two edges meeting there hold the tail further away.
-        var POP_TAIL_SHUT = 30;
         // The tail has to reach the marker, and it only protrudes about
         // this far, so an edge nearer the marker than this cannot carry it.
         var POP_REACH = 10;
@@ -13913,11 +14495,7 @@
         // How far along its edge the tail's point may sit, as an offset
         // into the card from that edge's start.
         function popTailRange(side) {
-          return [
-            side === "right" ? POP_TAIL_SHUT : POP_TAIL,
-            (popTailAcross(side) ? popW : popH) -
-              (side === "top" ? POP_TAIL_SHUT : POP_TAIL),
-          ];
+          return [POP_TAIL, (popTailAcross(side) ? popW : popH) - POP_TAIL];
         }
         // Which of the card's four edges the tail leaves from, and where
         // the card itself stands. The card is stood clear of the marker on
@@ -13932,7 +14510,7 @@
         // the marker it is describing.
         function popupPlace(x, y) {
           var maxLeft = vw - popW - POP_EDGE;
-          var maxTop = vh - popH - POP_EDGE;
+          var maxTop = vh - popH - popBottomEdge();
           var beside = [
             { side: "right", left: x - POP_GAP - popW, top: y - popH / 2 },
             { side: "left", left: x + POP_GAP, top: y - popH / 2 },
@@ -14255,7 +14833,12 @@
         var geoLast = 0;
         var geoTimer = null;
         var geoReq = null;
+        // Marked on the point rather than held in a variable of its own, so
+        // that a point superseded mid-flight takes its own pending state out
+        // of the panel with it — showSelection only ever asks whatever is
+        // currently picked.
         function lookup(at) {
+          at.pending = true;
           var token = ++geoToken;
           if (geoReq) {
             geoReq.onload = null;
@@ -14289,6 +14872,7 @@
           req.onload = function () {
             if (token !== geoToken) return;
             geoReq = null;
+            if (pick !== at) return;
             var data = null;
             try {
               data = JSON.parse(req.responseText);
@@ -14297,18 +14881,27 @@
             }
             // Out at sea, or over a blank corner of the map, the geocoder
             // answers with an error rather than a place. The coordinates
-            // already on screen are the honest answer there.
-            if (!data || data.error) return;
-            var read = readPlace(data);
-            if (pick !== at) return;
-            at.name = read.name;
-            at.addr = read.addr;
-            if (sel === "pick") showSelection();
+            // already on screen are the honest answer there — settle
+            // regardless, or the shimmer would run until the panel closed.
+            if (data && !data.error) {
+              var read = readPlace(data);
+              at.name = read.name;
+              at.addr = read.addr;
+            }
+            settle(at);
           };
           req.onerror = req.ontimeout = function () {
-            if (token === geoToken) geoReq = null;
+            if (token !== geoToken) return;
+            geoReq = null;
+            settle(at);
           };
           req.send();
+        }
+        // The end of a lookup, however it ended: the point stops waiting and
+        // the head redraws, which is what takes the shimmer away.
+        function settle(at) {
+          at.pending = false;
+          if (pick === at && sel === "pick") showSelection();
         }
         // What came back, cut down to a line and a half. A building or a
         // business answers with a name; a stretch of road answers with only
@@ -14591,15 +15184,21 @@
             zoomTo(zoom + 2, gx, gy);
             return;
           }
-          // With a card standing open, a press on the map is a press on
-          // nothing, and puts the card away rather than picking a new
-          // point. It takes the entry with it: opening the card is what
+          // With an *entry's* card standing open, a press on the map is a
+          // press on nothing, and puts the card away rather than picking a
+          // new point. It takes the entry with it: opening the card is what
           // picked the entry in the first place, so putting the card away
           // is undoing that one act — and an entry left picked with its
           // card gone is a marker still standing large and inked over
-          // nothing that says why, with the head describing a place the
-          // reader has just dismissed.
-          if (popSpot) {
+          // nothing that says why.
+          //
+          // A picked point's card is the opposite case. It is not something
+          // the press has to get out of the way of; it is the answer to the
+          // last press, and the reader pressing somewhere else is asking the
+          // same question about somewhere else. So the point moves and the
+          // card follows it, exactly as it did when this was a plate in the
+          // corner.
+          if (popSpot && popKind === "entry") {
             clearSelection();
             return;
           }
@@ -14661,58 +15260,28 @@
           panelEl.className = "mapview-panel";
           panelEl.setAttribute("role", "dialog");
           panelEl.setAttribute("aria-modal", "true");
-          panelEl.setAttribute("aria-labelledby", "mapviewTitle");
+          // Nothing left to name it after: what is picked is described by a
+          // card standing on the map, not by a title in the panel's chrome.
+          panelEl.setAttribute("aria-label", "Map preview");
 
-          var head = document.createElement("div");
-          head.className = "mapview-head";
-          titleWrap = document.createElement("div");
-          titleWrap.className = "mapview-titlewrap";
-          // The head is the only thing that says what was picked, and a
-          // reader who picked it with the keyboard never saw the map move.
-          titleWrap.setAttribute("aria-live", "polite");
-          titleEl = document.createElement("div");
-          titleEl.className = "mapview-title";
-          titleEl.id = "mapviewTitle";
-          subEl = document.createElement("div");
-          subEl.className = "mapview-sub";
-          titleWrap.appendChild(titleEl);
-          titleWrap.appendChild(subEl);
+          // What the plate in the corner used to be, for a reader who is
+          // being read to rather than looking: the name of whatever is
+          // currently picked, announced when it changes and never drawn.
+          // Someone who picked a point with the keyboard never saw the map
+          // move, and this is what tells them what they got.
+          sayEl = document.createElement("div");
+          sayEl.className = "mapview-vh";
+          sayEl.setAttribute("aria-live", "polite");
 
-          actions = document.createElement("div");
-          actions.className = "mapview-actions";
-          // The recommended way out, and the reason the other one asks
-          // first. On a phone this is also the closest thing to opening the
-          // Yandex Maps app directly: a page has no way to ask what is
-          // installed, but both platforms let an app claim its own site's
-          // links, so an https://yandex.com/maps/… address lands in the app
-          // when it is there and in the browser when it isn't. No probing,
-          // nothing to fail — which is why it is a plain link.
-          yaLink = document.createElement("a");
-          yaLink.className = "mapview-out mapview-out-primary";
-          yaLink.rel = "noopener";
-          // Only the desktop links really open a page, and only they get a
-          // new tab: a handoff to an app would leave an empty one behind.
-          if (!IS_ANDROID && !IS_IOS) yaLink.target = "_blank";
-          yaLink.textContent = "Open in Yandex Maps ↗";
-          // A button, not a link: it opens the dialog below, and the link
-          // it eventually follows lives in there.
-          outBtn = document.createElement("button");
-          outBtn.className = "mapview-out";
-          outBtn.type = "button";
-          outBtn.setAttribute("aria-haspopup", "dialog");
-          outBtn.setAttribute("aria-expanded", "false");
-          outBtn.textContent = "Open in different maps";
-          actions.appendChild(yaLink);
-          actions.appendChild(outBtn);
-
+          // The one way out of the panel, and the only chrome that is never
+          // about what is picked — so it stands on its own in a corner of
+          // the map. Not to be confused with the card's own close button,
+          // which puts the selection away rather than the panel.
           closeBtn = document.createElement("button");
           closeBtn.className = "mapview-close";
           closeBtn.type = "button";
           closeBtn.setAttribute("aria-label", "Close map preview");
           closeBtn.appendChild(icon(ICON_CLOSE));
-          head.appendChild(titleWrap);
-          head.appendChild(actions);
-          head.appendChild(closeBtn);
 
           var body = document.createElement("div");
           body.className = "mapview-body";
@@ -14764,8 +15333,6 @@
           zoomOutBtn.type = "button";
           zoomOutBtn.appendChild(icon(ICON_OUT));
           zoomOutBtn.setAttribute("aria-label", "Zoom out");
-          tools.appendChild(zoomInBtn);
-          tools.appendChild(zoomOutBtn);
           // Only offered where the browser can answer it at all. Over
           // file:// — which is what a saved snapshot would be, if the panel
           // ran there — the API is missing outright rather than refusing,
@@ -14777,7 +15344,6 @@
             locateBtn.appendChild(icon(ICON_LOCATE));
             locateBtn.setAttribute("aria-label", "Show my location");
             locateBtn.title = "Show my location";
-            tools.appendChild(locateBtn);
           }
           // Sits with the map's own controls rather than with the two ways
           // out, because it acts on the map — and it is only there when
@@ -14789,26 +15355,60 @@
           clearBtn.appendChild(icon(ICON_CLEAR));
           clearBtn.setAttribute("aria-label", "Clear the picked point");
           clearBtn.title = "Clear the picked point";
+          // Appended so the column reads, top to bottom: clear, locate, then
+          // the two zoom steps nearest the corner. The two that come and go
+          // are the two at the top, and the column is anchored by its foot —
+          // so a selection appearing or being cleared never shifts the zoom
+          // buttons out from under the finger reaching for them. is-apart
+          // therefore holds the gap *below* itself, and lands on whichever of
+          // the pair is the last one standing.
           tools.appendChild(clearBtn);
+          if (locateBtn) tools.appendChild(locateBtn);
+          tools.appendChild(zoomInBtn);
+          tools.appendChild(zoomOutBtn);
           mapEl.appendChild(tools);
 
           popupEl = document.createElement("div");
           popupEl.className = "mapview-pop tail-bottom";
           popupEl.style.display = "none";
+          // A strip naming the kind of thing the card is about, with that
+          // thing's own mark in it — the same drawing, at the same size, as
+          // the marker or the pin the tail is pointing at. It is what makes
+          // the card read as that pin's record rather than as something
+          // floating loose over the map, and it costs one element: an
+          // entry's name and everything under it still come from the clone.
+          // It also carries the card's close button, which used to hang off
+          // the outside of the top right corner.
+          popHead = document.createElement("div");
+          popHead.className = "mapview-pop-head";
+          popMark = document.createElement("span");
+          popMark.className = "mapview-pop-mark";
+          popCat = document.createElement("span");
+          popCat.className = "mapview-pop-cat";
+          popHead.appendChild(popMark);
+          popHead.appendChild(popCat);
           popScroll = document.createElement("div");
           popScroll.className = "mapview-pop-scroll";
           popTail = document.createElement("div");
           popTail.className = "mapview-pop-tail";
+          // Inside the head strip, at the end of it. It used to be a disc
+          // pushed 10px past the card's top right corner, hanging over the
+          // map — which is why the tail had to keep twice its usual distance
+          // from that one corner, and why the card could not simply clip
+          // itself to its own rounded frame. In the strip it costs no
+          // overhang, needs no exception, and sits in the one row of the
+          // card that is chrome rather than content.
           popClose = document.createElement("button");
           popClose.type = "button";
           popClose.className = "mapview-pop-close";
-          popClose.setAttribute("aria-label", "Close this entry");
+          popClose.setAttribute("aria-label", "Close this card");
           popClose.appendChild(icon(ICON_CLOSE));
-          // The head's pair again, at the card. Built once and put back
-          // under each clone rather than cloned with it, so they carry
-          // their listeners and nothing has to be rebound per entry. They
-          // are aimed at the card's own entry, not at the selection, and
-          // say so by name.
+          popHead.appendChild(popClose);
+          // Built once and put under each filling rather than rebuilt with
+          // it, so they carry their listeners and nothing has to be rebound.
+          // They are aimed at whatever the card is about — this entry, or
+          // this point — and not at the selection, which for a moment during
+          // a change may be something else.
           popActions = document.createElement("div");
           popActions.className = "mapview-pop-actions";
           popYa = document.createElement("a");
@@ -14824,9 +15424,15 @@
           popOut.textContent = "Open in different maps";
           popActions.appendChild(popYa);
           popActions.appendChild(popOut);
+          // The two ways out are a footer of the card now rather than the
+          // last thing inside its scroller: an entry with a long note used
+          // to push them off the bottom, so the reader had to scroll a card
+          // they had already read to find the button they wanted. Pinned,
+          // they are where they were the last time, on every entry.
+          popupEl.appendChild(popHead);
           popupEl.appendChild(popScroll);
+          popupEl.appendChild(popActions);
           popupEl.appendChild(popTail);
-          popupEl.appendChild(popClose);
           mapEl.appendChild(popupEl);
 
           hintEl = document.createElement("div");
@@ -14905,34 +15511,45 @@
           // OpenStreetMap's licence asks for the credit, and the geocoder
           // is worth naming too: it is the other thing being asked, and it
           // is asked on the reader's behalf.
-          var credit = document.createElement("div");
-          credit.className = "mapview-credit";
-          credit.appendChild(document.createTextNode("Map data © "));
+          creditEl = document.createElement("div");
+          creditEl.className = "mapview-credit";
+          // Set as short as the two attributions can honestly be put. The
+          // sentence this used to be — "Map data © OpenStreetMap
+          // contributors. Place names from Nominatim." — needs about 414px to
+          // stand on one line, which is wider than the map is on every phone
+          // there is, so it wrapped on all of them however much room the
+          // buttons gave back. What is left is the wording ODbL actually asks
+          // for, verbatim, and the geocoder named; only the prose framing
+          // went. It fits on one line down to a 320px screen.
+          creditEl.appendChild(document.createTextNode("© "));
           var osmLink = document.createElement("a");
           osmLink.href = "https://www.openstreetmap.org/copyright";
           osmLink.rel = "noopener";
           osmLink.target = "_blank";
           osmLink.textContent = "OpenStreetMap contributors";
-          credit.appendChild(osmLink);
-          credit.appendChild(
-            document.createTextNode(". Place names from Nominatim."),
-          );
+          creditEl.appendChild(osmLink);
+          creditEl.appendChild(document.createTextNode(" · Nominatim"));
 
-          panelEl.appendChild(head);
+          // Both float over the map, after the loading note so it can never
+          // cover the way out, and before the confirm dialog, which covers
+          // everything. The card carries its own z-index and stands above
+          // them both.
+          body.appendChild(closeBtn);
+          body.appendChild(creditEl);
+          body.appendChild(sayEl);
           panelEl.appendChild(body);
-          panelEl.appendChild(credit);
           overlay.appendChild(panelEl);
           document.body.appendChild(overlay);
 
           closeBtn.addEventListener("click", close);
-          // Either way of asking the question clears the card out of the
-          // way of the answer — the head's button at the top of the panel
-          // and the card's own, at the bottom of the card.
-          outBtn.addEventListener("click", function () {
-            var on = current();
-            if (on) holdPopup();
-            openConfirm(outBtn, on);
-          });
+          // The card's ✕ takes the selection with it, not just the card. The
+          // card is the only thing that says what is picked, so leaving one
+          // picked behind it would be a marker standing large and inked over
+          // nothing that says why — which is the same reason a press on the
+          // map clears it (see onPointerUp).
+          popClose.addEventListener("click", clearSelection);
+          // Asking the question clears the card out of the way of the
+          // answer; closeConfirm puts it back however the question ended.
           popOut.addEventListener("click", function () {
             if (popSpot) holdPopup();
             openConfirm(popOut, popHeld);
@@ -14946,7 +15563,6 @@
             zoomTo(zoom - 1);
           });
           if (locateBtn) locateBtn.addEventListener("click", locate);
-          popClose.addEventListener("click", closePopup);
           mapEl.addEventListener("pointerdown", onPointerDown);
           mapEl.addEventListener("pointermove", onPointerMove);
           mapEl.addEventListener("pointerup", onPointerUp);
@@ -15028,26 +15644,42 @@
         function tabStops() {
           if (confirmOpen()) return [cancelBtn, goLink];
           var stops = [];
-          if (sel) {
-            stops.push(yaLink);
-            stops.push(outBtn);
-          }
           stops.push(closeBtn);
           stops.push(mapEl);
           if (popSpot) {
             stops.push(popClose);
             var inPop = popScroll.querySelectorAll("a, button");
             for (var p = 0; p < inPop.length; p++) stops.push(inPop[p]);
+            // The card's own two ways out are a pinned footer now rather than
+            // the last thing in its scroller, so the sweep above no longer
+            // reaches them. Last, as they are last on the card.
+            stops.push(popYa);
+            stops.push(popOut);
           }
           if (!zoomInBtn.disabled) stops.push(zoomInBtn);
           if (!zoomOutBtn.disabled) stops.push(zoomOutBtn);
           if (locateBtn) stops.push(locateBtn);
           if (sel) stops.push(clearBtn);
-          // Last, and only when they are on the map: they are the way back
-          // to a selection that has been cleared.
+          // Last: they are the way back to a selection that has been cleared.
           if (entry) stops.push(entryPin);
           if (pick) stops.push(pickPin);
-          return stops;
+          // Sieved down to what is actually drawn. Half of these come and go
+          // — the card comes and goes with the selection, the entry's pin is
+          // absent whenever the entry has a marker of its own to be, the
+          // clear button appears with the selection — and .focus() on
+          // something that isn't rendered does nothing whatever, silently.
+          // Tab would then find the same index again on the next press and
+          // hand it to the same missing element for ever, which is a trap
+          // built out of nothing but an optimistic list. Anything drawn is
+          // reachable; nothing else is offered.
+          var live = [];
+          for (var i = 0; i < stops.length; i++) {
+            if (stops[i] && stops[i].offsetWidth && stops[i].offsetHeight) {
+              live.push(stops[i]);
+            }
+          }
+          // The way out is never not a stop.
+          return live.length ? live : [closeBtn];
         }
 
         function confirmOpen() {
@@ -15059,7 +15691,7 @@
         // question comes from the card standing on the map.
         function openConfirm(from, on) {
           if (!askBox || !on) return;
-          confirmFrom = from || outBtn;
+          confirmFrom = from || popOut;
           goLink.href = pointTarget(
             on.lat,
             on.lon,
@@ -15078,7 +15710,6 @@
           var from = confirmFrom;
           confirmFrom = null;
           askBox.className = "mapview-confirm";
-          outBtn.setAttribute("aria-expanded", "false");
           popOut.setAttribute("aria-expanded", "false");
           // However the question was answered — Cancel, Continue, Escape, a
           // press on the scrim — the card that stood aside for it comes
@@ -15086,16 +15717,15 @@
           // dialog interrupted, and none of those four answers is a reason
           // to take it away from them. Before the focus is handed over,
           // since the button it goes back to lives inside the card.
-          if (popHeld) {
-            var back = popHeld;
-            popHeld = null;
-            openPopup(back);
-          }
+          unholdPopup();
           // display:none takes the focus with it, so hand it back to the
           // button that opened the dialog rather than to the document.
+          // The card's button is only a place to put the focus while the
+          // card is on the map, and restoring it above may not have happened
+          // — the answer may have been to leave. The panel's close button is
+          // always there, which is what makes it the fallback.
           if (held) {
             if (from === popOut && popSpot) popOut.focus();
-            else if (sel) outBtn.focus();
             else closeBtn.focus();
           }
         }
@@ -15200,6 +15830,7 @@
           // Whatever was being read last time is not what is being opened
           // now, so nothing is owed a card back.
           popHeld = null;
+          popHeldKind = null;
           spotZoom = -1;
           spotSel = null;
           placePin(pickPin, null);
@@ -15236,7 +15867,8 @@
           showSelection();
           // Opened from a card, the panel opens that card too: the marker
           // is picked out and its own entry stands over it, which is what
-          // tapping the marker would have done.
+          // tapping the marker would have done. It is also the only thing
+          // that says what was opened, now that the corner plate is gone.
           if (at) openPopup(at);
           // The size is taken; let the panel animate again, so the next
           // pan can grow it.
@@ -15303,6 +15935,7 @@
           clearTimeout(growTimer);
           closePopup();
           popHeld = null;
+          popHeldKind = null;
           // Back to a window over the page, whichever way it was opened:
           // the next card to be tapped is a glance again.
           isFull = false;
@@ -15312,7 +15945,7 @@
           // link below, not to a button in a panel that is on its way out.
           if (askBox) {
             askBox.className = "mapview-confirm";
-            outBtn.setAttribute("aria-expanded", "false");
+            popOut.setAttribute("aria-expanded", "false");
           }
           document.documentElement.classList.remove("mapview-open");
           document.documentElement.style.paddingRight = "";
@@ -15390,8 +16023,10 @@
             closeConfirm();
             return;
           }
+          // The card first, the panel on a second press — and the card goes
+          // with its selection, exactly as its own ✕ does.
           if (popSpot) {
-            closePopup();
+            clearSelection();
             return;
           }
           close();
