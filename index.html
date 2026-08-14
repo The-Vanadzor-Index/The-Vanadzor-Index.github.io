@@ -14172,7 +14172,7 @@
             }
             var el = document.createElement("div");
             el.className = "mapview-spot";
-            var mark = catIcon(card.getAttribute("data-cat"));
+            var mark = spotIcon(card);
             if (mark) el.appendChild(mark);
             // Named for a pointer that hovers, and hidden from screen
             // readers: every one of these is a card in the page behind the
@@ -14542,7 +14542,7 @@
           // The strip takes the marker's own mark and its category's name.
           // A category the icon table doesn't know draws a plain disc on the
           // map, and gets a plain disc here for the same reason.
-          popStrip(catIcon(spot.cat), spot.cat || "", "entry");
+          popStrip(spotIcon(spot.card), spot.cat || "", "entry");
           popShow();
         }
         /* ---- The same card, over a point the reader picked ----------------
@@ -14955,6 +14955,28 @@
         };
         function catIcon(cat) {
           var shapes = CAT_ICONS[cat];
+          if (!shapes) return null;
+          var svg = icon(shapes);
+          svg.setAttribute("width", "14");
+          svg.setAttribute("height", "14");
+          svg.setAttribute("stroke-width", "2.1");
+          return svg;
+        }
+        // A few subcategories read as their own kind of place rather than
+        // as one more member of their category — a church is not a spanner
+        // — so they get a mark of their own, keyed by the card's own
+        // card-tag and checked before CAT_ICONS. Everything not listed
+        // here draws exactly as it did, off data-cat alone.
+        var TAG_ICONS = {
+          // A Latin cross, kept off-centre so it isn't read as Medicine's
+          // plus with the horizontal bar in a different place.
+          Religion: [{ d: "M12 3.4v17.2" }, { d: "M7.6 8.4h8.8" }],
+        };
+        function spotIcon(card) {
+          var tag = card.querySelector(".card-tag");
+          var shapes =
+            (tag && TAG_ICONS[tag.textContent]) ||
+            CAT_ICONS[card.getAttribute("data-cat")];
           if (!shapes) return null;
           var svg = icon(shapes);
           svg.setAttribute("width", "14");
