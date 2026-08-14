@@ -51,6 +51,30 @@ Synced: no
 
 ---
 
+## 2026-08-14
+
+### Edited — Церковь Святого Григора Нарекаци (Контакты и база знаний)
+Synced: no
+
+- Категория: Досуг → Мастера и услуги
+- Подкатегория: Достопримечательность / Туризм → Религия
+
+### Edited — Храм Пресвятой Богородицы (Старая Церковь) (Контакты и база знаний)
+Synced: no
+
+- Категория: Досуг → Мастера и услуги
+- Подкатегория: Достопримечательность / Туризм → Религия
+
+### Edited — Русская Православная Церковь (Контакты и база знаний)
+Synced: no
+
+- Категория: Досуг → Мастера и услуги
+- Подкатегория: Достопримечательность / Туризм → Религия
+
+The site's Leisure catch-all subgroup filed all three churches next to a cinema, a pub and a
+library. They now sit in a new Religion subgroup under Services & Tradespeople, alongside the
+site's other "an institution, not an activity" cards.
+
 ## 2026-08-04
 
 ### Removed — Авиадоставка в Армению, Никита Почукалин (Транспорт и доставка)
