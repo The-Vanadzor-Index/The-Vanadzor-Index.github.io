@@ -13593,6 +13593,13 @@
         var pick = null;
         var sel = null;
         var me = null;
+        // Set only when Locate is pressed while a card is already open: that
+        // card was standing there first, so the reader's own position must
+        // not land under it. The instant the reader moves the map or picks
+        // anything else, both "already" and "still open" stop being true, so
+        // this drops back to false and placement goes back to caring only
+        // about the marker.
+        var meShield = false;
         var spots = null;
         var spotZoom = -1;
         var spotOx = 0;
@@ -13692,6 +13699,7 @@
           if (next < MIN_ZOOM) next = MIN_ZOOM;
           if (next > MAX_ZOOM) next = MAX_ZOOM;
           if (next === zoom) return;
+          stopAvoidingMe();
           if (ax === undefined) {
             ax = vw / 2;
             ay = vh / 2;
@@ -14502,6 +14510,7 @@
            copy-on-tap, which works in the clone exactly as it does in the
            page. */
         function openPopup(spot) {
+          stopAvoidingMe();
           popSpot = spot;
           popKind = "entry";
           while (popScroll.firstChild) {
@@ -14539,6 +14548,7 @@
            pin with its own tail: the name Nominatim gives it, the
            coordinates under that, and the same two ways out. */
         function openPointPopup(at) {
+          stopAvoidingMe();
           popSpot = at;
           popKind = "point";
           fillPoint(at);
@@ -14689,6 +14699,27 @@
         function popClamp(v, lo, hi) {
           return v < lo ? lo : v > hi ? hi : v;
         }
+        // Whether a candidate placement's rectangle would stand over the
+        // reader's own position — a circle rather than a point, since "me"
+        // is drawn as a dot with (sometimes) an accuracy ring around it, and
+        // the ring is the part actually worth staying off.
+        // Whichever of "the reader moved the map" or "the reader picked
+        // something else" happens first ends the special treatment — called
+        // from every path that pans, zooms, or opens a fresh popup.
+        function stopAvoidingMe() {
+          meShield = false;
+        }
+        function coversMe(c) {
+          if (!meShield || !me) return false;
+          var meX = lonToX(me.lon, zoom) - viewLeft();
+          var meY = latToY(me.lat, zoom) - viewTop();
+          var meR = Math.max(9, me.acc / metresPerPixel(me.lat));
+          var nx = popClamp(meX, c.left, c.left + popW);
+          var ny = popClamp(meY, c.top, c.top + popH);
+          var dx = meX - nx;
+          var dy = meY - ny;
+          return dx * dx + dy * dy < meR * meR;
+        }
         // Whether the tail runs across the card's width rather than down
         // its height — which of the two coordinates it slides along.
         function popTailAcross(side) {
@@ -14726,6 +14757,7 @@
             beside[0],
             beside[1],
           ];
+          var reachesMarker = null;
           for (var i = 0; i < cands.length; i++) {
             var c = cands[i];
             c.left = popClamp(c.left, POP_EDGE, maxLeft);
@@ -14741,8 +14773,22 @@
                   : c.side === "right"
                     ? c.left + popW <= x - POP_REACH
                     : c.left >= x + POP_REACH;
-            if (reaches && clear) return c;
+            if (reaches && clear && !coversMe(c)) return c;
+            // Kept in reserve: a side that answers the marker properly but
+            // happens to stand over the reader. Worth returning to only if
+            // nothing manages both — see below.
+            if (reaches && clear && !reachesMarker) reachesMarker = c;
           }
+          // Every side that reaches the marker also covers the reader — try
+          // every side again, this time asking only to clear the reader.
+          // Standing wherever it must to do that is worth more here than a
+          // tail that reaches the marker exactly.
+          if (meShield) {
+            for (var j = 0; j < cands.length; j++) {
+              if (!coversMe(cands[j])) return cands[j];
+            }
+          }
+          if (reachesMarker) return reachesMarker;
           // No side can reach it: the marker has been panned off the map
           // altogether, or the map is smaller than the card. Leave the card
           // where it stands and hand the tail to the edge the marker lies
@@ -14978,6 +15024,11 @@
               var other = current() || entry;
               if (other) {
                 fitBoth(me, other);
+                // The card naming `other` was already standing before this
+                // press; the reader's own position must not land under it.
+                // stopAvoidingMe (openPopup/openPointPopup, a real pan, a
+                // zoom) is what lets placement stop minding it again.
+                meShield = true;
               } else {
                 if (zoom < 16) zoom = 16;
                 centreOn(me.lat, me.lon);
@@ -15210,6 +15261,7 @@
           return Math.sqrt(dx * dx + dy * dy);
         }
         function startPinch() {
+          stopAvoidingMe();
           var ids = pointerIds();
           var a = pointers[ids[0]];
           var b = pointers[ids[1]];
@@ -15322,6 +15374,7 @@
               return;
             }
             drag.moved = true;
+            stopAvoidingMe();
             mapEl.className = "mapview-map is-dragging";
             // Moving the map is the moment the glance became a map.
             grow();
@@ -15438,6 +15491,7 @@
             selectPoint(at.lat, at.lon);
           } else return;
           if (dx || dy) {
+            stopAvoidingMe();
             grow();
             cx += dx;
             cy += dy;
@@ -16022,6 +16076,7 @@
           entry = at;
           pick = null;
           me = null;
+          meShield = false;
           sel = at ? "entry" : null;
           if (locateBtn) {
             locateBtn.className = "mapview-locate is-apart";
@@ -16143,6 +16198,7 @@
           isFull = false;
           overlay.className = "mapview";
           me = null;
+          meShield = false;
           // Reset rather than closeConfirm(): the focus is owed to the card
           // link below, not to a button in a panel that is on its way out.
           if (askBox) {
