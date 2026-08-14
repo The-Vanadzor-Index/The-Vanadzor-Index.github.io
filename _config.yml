@@ -33,3 +33,5 @@ exclude:
   # index.html is what gets served; these are the files it is built from.
   - src
   - build.py
+  # Content-authoring tool, not part of the site.
+  - yandex_scrape.py
