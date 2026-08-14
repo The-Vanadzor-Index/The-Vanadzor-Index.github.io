@@ -131,6 +131,7 @@
         /* Painted through a mask so it takes currentColor and follows the
            theme; the stroke colour inside the data URI is never seen. */
         --icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.2 16.2 21 21'/%3E%3C/svg%3E");
+        --icon-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
 
         /* Tells the browser which way round this page is, so the caret,
            the scrollbars and the form controls it draws itself come out
@@ -653,9 +654,9 @@
       }
       /* Marks the opposite edge from .to-top-sentinel: the top of the
          directory, right where .controls sits before it has anything to
-         stick to. Watched so the personal-toggle can fold away once this
+         stick to. Watched so the toggle pills can fold away once this
          has scrolled out of view and return once it's back — see
-         .personal-toggle-wrap.toggle-folded below. Given real height
+         .toggle-pill.toggle-folded below. Given real height
          rather than the usual 1px hairline: the script reads this
          sentinel's intersection *ratio*, folding only once it's fully
          scrolled past and unfolding only once it's fully back, so the
@@ -1141,6 +1142,77 @@
         margin-top: 0.3rem;
       }
 
+      /* Injected by script, one per card — a no-JS visitor never sees
+         them, so unlike .badge-individual (which is content the page
+         has an opinion about either way) these need no .js-only
+         scaffolding: without JS they simply never exist. Absolute
+         rather than laid out in flow, so marking a card favorite or
+         visited never reflows its rows; .card-name reserves the room
+         for them instead (html.js .card-name below). */
+      .card-actions {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.85rem;
+        display: flex;
+        gap: 0.3rem;
+      }
+      .card-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--paper-card);
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        transition:
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          background var(--t-fast) var(--ease);
+      }
+      .card-action-btn:hover {
+        border-color: var(--pine);
+        color: var(--ink);
+      }
+      .fav-btn.is-active {
+        border-color: var(--rust);
+        background: var(--tint-amber);
+        color: var(--amber-ink);
+      }
+      .visited-btn.is-active {
+        border-color: var(--pine);
+        background: var(--tint-pine);
+        color: var(--pine-deep);
+      }
+      /* Icon rather than a character, same reasoning as .search-wrap::before
+         — a link glyph is missing from most text fonts and would land at a
+         different size on each platform next to the star/check text glyphs
+         either side of it. */
+      .share-btn::before {
+        content: "";
+        display: block;
+        width: 14px;
+        height: 14px;
+        background: currentColor;
+        -webkit-mask: var(--icon-link) center / contain no-repeat;
+        mask: var(--icon-link) center / contain no-repeat;
+      }
+      html.js .card {
+        position: relative;
+      }
+      /* Room for three .card-action-btn circles (26px, 0.3rem gap) plus
+         the card's own right offset — widened from the two-button figure
+         when the share button joined fav/visited. */
+      html.js .card-name {
+        padding-right: 5.85rem;
+      }
+
       .card-price {
         font-family: var(--mono);
         font-size: 0.775rem;
@@ -1180,6 +1252,10 @@
       html.js .card.personal-off {
         display: none;
       }
+      html.js .card.favorite-off,
+      html.js .card.visited-off {
+        display: none;
+      }
       .subgroup.hidden {
         display: none;
       }
@@ -1194,6 +1270,16 @@
         font-family: var(--mono);
         font-size: 0.85rem;
         display: none;
+      }
+      .empty-state .empty-filter {
+        color: var(--ink);
+        text-decoration: underline dotted;
+        text-underline-offset: 2px;
+        cursor: pointer;
+      }
+      .empty-state .empty-filter:hover,
+      .empty-state .empty-filter:focus-visible {
+        color: var(--rust);
       }
 
       /* The disclaimer and the licence block are the longest prose on the
@@ -1328,10 +1414,15 @@
         font-style: italic;
       }
 
-      /* Points the reader back at the control the notice above names —
-         a ring that blooms and fades around the pill, since the toggle
-         itself never moves or changes state to draw the eye on its own. */
-      .personal-toggle-wrap.toggle-flash {
+      /* Points the reader back at the control a notice or empty-state
+         filter named — a ring that blooms and fades around it, since
+         the control itself never moves or changes state to draw the
+         eye on its own. Shared by every filter control a reader can be
+         pointed back at: the personal-contacts/favorites/visited pills,
+         a category chip, and the search box. */
+      .toggle-pill.toggle-flash,
+      .chip.toggle-flash,
+      .search-wrap.toggle-flash {
         animation: togglePillFlash 1.2s var(--ease) 1;
       }
       @keyframes togglePillFlash {
@@ -1346,16 +1437,21 @@
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        .personal-toggle-wrap.toggle-flash {
+        .toggle-pill.toggle-flash,
+        .chip.toggle-flash,
+        .search-wrap.toggle-flash {
           animation: none;
           box-shadow: 0 0 0 3px var(--pine);
         }
       }
 
-      /* Search box and the personal-contacts chip as one row: flex-wrap
-         puts the chip beside the search box whenever both fit at their
-         natural width, and drops it to a centred second line once they
-         don't — no breakpoint needed, the wrap does the work. */
+      /* Search box and the three toggle pills as one row: flex-wrap puts
+         the pills beside the search box whenever both fit at their
+         natural width, and drops them to a centred second line — as one
+         group, never split pill-from-pill — once they don't. No
+         breakpoint needed, the wrap does the work. Once dropped to its
+         own line, the group is scaled rather than wrapped or scrolled
+         further — see .toggle-row below. */
       .search-row {
         display: flex;
         flex-wrap: wrap;
@@ -1369,10 +1465,73 @@
         min-width: 0;
         margin: 0;
       }
+      /* The three toggle pills, grouped so the row above wraps them
+         together or not at all — never one pill left dangling beside the
+         search box while its neighbours drop away. On a phone too narrow
+         for all three even alone on their own line, script (11-toggle-
+         fold.js) scales .toggle-row-inner down until it exactly fits
+         .toggle-row's width — a shrunk pill a reader can still read in
+         full beats a full-size one they have to scroll to find the rest
+         of. .toggle-row is the box that width is measured against and
+         that clamps to it (max-width:100%, same reasoning as the old
+         scrolling version this replaced: flex-shrink:0 alone only stops
+         the *parent's* shrink pass, not this element's own natural
+         width); overflow:hidden is a guard against sub-pixel rounding
+         after the scale is applied, not a real clip — the scale is
+         computed to remove the overflow, not to hide it. align-items is
+         flex-start rather than the flex default (stretch) because
+         script sets this element's own height explicitly to match the
+         scaled-down child (below) — stretch would then force that child
+         to *that* height too, corrupting the next natural-height
+         measurement into a runaway shrink on every recomputation.
+
+         justify-content stays centred only while nothing needs scaling
+         (the group fits its own wrapped line with room to spare, e.g. a
+         tablet width) — script adds .toggle-row-scaled once it doesn't.
+         A transform changes paint, not layout: the child keeps its full
+         unscaled width for layout purposes even after being scaled down,
+         so centering it would still centre *that* width, hanging half
+         the (now merely invisible, not gone) overflow off each side —
+         past the left edge, where nothing clips it back in. Flush left
+         means the overflow is entirely on the right, which .toggle-row's
+         own overflow:hidden actually catches, and which the scale was
+         computed to remove down to nothing anyway. */
+      .toggle-row {
+        display: flex;
+        align-items: flex-start;
+        flex-shrink: 0;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        justify-content: center;
+        transition: height var(--t-mid) var(--ease);
+      }
+      .toggle-row.toggle-row-scaled {
+        justify-content: flex-start;
+      }
+      /* Unconstrained on purpose — its natural (un-scaled) width is what
+         script measures to compute the scale above, so nothing here may
+         clamp it the way .toggle-row itself is clamped. transform-origin
+         top left: with the scale computed so the result exactly fills
+         .toggle-row's width, growing from that corner lands the scaled
+         row flush with .toggle-row's own edges without any extra
+         centring math. */
+      .toggle-row-inner {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.6rem;
+        transform-origin: top left;
+        transition: transform var(--t-mid) var(--ease);
+      }
       /* Cut from the same cloth as .chip — tinted pill, mono caps-free
          label — so it reads as a filter alongside the category chips
-         rather than as a settings control that wandered into the bar. */
-      .personal-toggle-wrap {
+         rather than as a settings control that wandered into the bar.
+         Shared by every toggle pill in the search row (personal
+         contacts, favorites, visited); a pill also carries its own
+         specific class (.personal-toggle-wrap etc.) for JS hooks that
+         are genuinely its own, such as the hidden-subcategories
+         notice's own preference-loading logic. */
+      .toggle-pill {
         display: flex;
         align-items: center;
         flex-shrink: 0;
@@ -1408,11 +1567,11 @@
           max-height var(--t-mid) var(--ease) var(--t-fold-lead),
           padding var(--t-mid) var(--ease) var(--t-fold-lead);
       }
-      .personal-toggle-wrap:hover {
+      .toggle-pill:hover {
         border-color: var(--pine);
         color: var(--ink);
       }
-      .personal-toggle-wrap.active {
+      .toggle-pill.active {
         border-color: var(--pine);
         color: var(--ink);
       }
@@ -1426,7 +1585,7 @@
          reads as folding away rather than just vanishing. pointer-events
          drops immediately (it isn't something a transition can ease) so a
          fading pill can't still be tapped mid-animation. */
-      .personal-toggle-wrap.toggle-folded {
+      .toggle-pill.toggle-folded {
         transition:
           border-color var(--t-fast) var(--ease),
           color var(--t-fast) var(--ease),
@@ -1733,6 +1892,46 @@
       }
       .pwa-install-notice-dismiss:hover {
         color: var(--body);
+      }
+
+      /* Explanation popup for the Favorites/Visited star and check, since
+         neither glyph reads as a button on its own. Anchored by script to
+         whichever one is hovered, focused, or tapped — one shared element
+         repositioned per button rather than one per card, same reasoning
+         as .copy-toast being a single instance. Above the map panel for
+         the same reason .copy-toast is: the pair of buttons is also on
+         the card cloned into a marker's popup. */
+      .action-tooltip {
+        position: fixed;
+        z-index: 50;
+        max-width: calc(100vw - 1.2rem);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        color: var(--paper-card);
+        background: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
+        padding: 0.4rem 0.75rem;
+        box-shadow: var(--elev-2);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translate(-50%, 0.25rem);
+        transition:
+          opacity 0.15s,
+          visibility 0.15s,
+          transform 0.15s;
+      }
+      .action-tooltip.action-tooltip-below {
+        transform: translate(-50%, -0.25rem);
+      }
+      .action-tooltip.action-tooltip-shown {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
       }
 
       /* ---- Map preview -------------------------------------------------
@@ -2240,6 +2439,44 @@
       .mapview-spot.is-on svg {
         width: 19px;
         height: 19px;
+      }
+      /* A ring added around the mark rather than a change to its size or
+         colour — favorite/visited is a note about the entry, not a
+         different kind of place, so the category sign underneath stays
+         legible and every size used by the clustering math (groupRadius
+         in 09-map.js) is untouched. Stacks with .is-on's own elevated
+         shadow rather than replacing it. */
+      .mapview-spot.is-favorite {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 1px 3px var(--shadow-strong);
+      }
+      .mapview-spot.is-visited {
+        box-shadow:
+          0 0 0 2px var(--pine-deep),
+          0 1px 3px var(--shadow-strong);
+      }
+      .mapview-spot.is-favorite.is-visited {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 0 0 4px var(--pine-deep),
+          0 1px 3px var(--shadow-strong);
+      }
+      .mapview-spot.is-on.is-favorite {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 3px 10px var(--shadow-strong);
+      }
+      .mapview-spot.is-on.is-visited {
+        box-shadow:
+          0 0 0 2px var(--pine-deep),
+          0 3px 10px var(--shadow-strong);
+      }
+      .mapview-spot.is-on.is-favorite.is-visited {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 0 0 4px var(--pine-deep),
+          0 3px 10px var(--shadow-strong);
       }
       /* A gathering, not a place — so pine rather than rust, and sized by
          how much it is holding. */
@@ -3281,18 +3518,46 @@
             type="text"
           />
         </div>
-        <label
-          aria-label="Hide most personal contacts (individuals, not businesses)"
-          class="js-only personal-toggle-wrap"
-          for="personalToggle"
-          title="Hide most personal contacts (individuals, not businesses)"
-        >
-          <span class="switch">
-            <input type="checkbox" id="personalToggle" />
-            <span class="switch-track"></span>
-          </span>
-          <span>Hide individuals</span>
-        </label>
+        <div class="toggle-row">
+          <div class="toggle-row-inner">
+            <label
+              aria-label="Hide most personal contacts (individuals, not businesses)"
+              class="js-only toggle-pill personal-toggle-wrap"
+              for="personalToggle"
+              title="Hide most personal contacts (individuals, not businesses)"
+            >
+              <span class="switch">
+                <input type="checkbox" id="personalToggle" />
+                <span class="switch-track"></span>
+              </span>
+              <span>Hide individuals</span>
+            </label>
+            <label
+              aria-label="Show only entries marked as favorites"
+              class="js-only toggle-pill favorites-toggle-wrap"
+              for="favoritesToggle"
+              title="Show only entries marked as favorites"
+            >
+              <span class="switch">
+                <input type="checkbox" id="favoritesToggle" />
+                <span class="switch-track"></span>
+              </span>
+              <span>Favorites</span>
+            </label>
+            <label
+              aria-label="Show only entries marked as visited"
+              class="js-only toggle-pill visited-toggle-wrap"
+              for="visitedToggle"
+              title="Show only entries marked as visited"
+            >
+              <span class="switch">
+                <input type="checkbox" id="visitedToggle" />
+                <span class="switch-track"></span>
+              </span>
+              <span>Visited</span>
+            </label>
+          </div>
+        </div>
       </div>
       <div class="chip-scroll-wrap">
         <button

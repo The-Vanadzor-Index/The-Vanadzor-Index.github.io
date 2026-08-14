@@ -45,8 +45,30 @@
       for (var i = 0; i < hiddenEls.length; i++) {
         hiddenEls[i].className = hiddenEls[i].className
           .replace(/\bhidden\b/g, "")
+          .replace(/\bfavorite-off\b/g, "")
+          .replace(/\bvisited-off\b/g, "")
           .replace(/\s+/g, " ")
           .replace(/^\s|\s$/g, "");
+      }
+
+      // Favorites/visited marks are this device's own notes, kept in
+      // this browser's storage — a saved copy opened somewhere else
+      // starts with none, same as the "Hide individuals" toggle above.
+      // The buttons themselves are re-injected by script on load (see
+      // 12-favorites-visited.js's own-card guard), so the clone just
+      // drops today's copies rather than carrying stale is-active state
+      // into whatever loads the file next.
+      var cloneActions = clone.querySelectorAll(".card-actions");
+      for (var y = 0; y < cloneActions.length; y++) {
+        cloneActions[y].parentNode.removeChild(cloneActions[y]);
+      }
+      var cloneFavToggle = clone.querySelector("#favoritesToggle");
+      if (cloneFavToggle) {
+        cloneFavToggle.removeAttribute("checked");
+      }
+      var cloneVisitedToggle = clone.querySelector("#visitedToggle");
+      if (cloneVisitedToggle) {
+        cloneVisitedToggle.removeAttribute("checked");
       }
 
       // Reset chip active state back to just "All".

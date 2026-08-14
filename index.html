@@ -131,6 +131,7 @@
         /* Painted through a mask so it takes currentColor and follows the
            theme; the stroke colour inside the data URI is never seen. */
         --icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.2 16.2 21 21'/%3E%3C/svg%3E");
+        --icon-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
 
         /* Tells the browser which way round this page is, so the caret,
            the scrollbars and the form controls it draws itself come out
@@ -653,9 +654,9 @@
       }
       /* Marks the opposite edge from .to-top-sentinel: the top of the
          directory, right where .controls sits before it has anything to
-         stick to. Watched so the personal-toggle can fold away once this
+         stick to. Watched so the toggle pills can fold away once this
          has scrolled out of view and return once it's back — see
-         .personal-toggle-wrap.toggle-folded below. Given real height
+         .toggle-pill.toggle-folded below. Given real height
          rather than the usual 1px hairline: the script reads this
          sentinel's intersection *ratio*, folding only once it's fully
          scrolled past and unfolding only once it's fully back, so the
@@ -1141,6 +1142,77 @@
         margin-top: 0.3rem;
       }
 
+      /* Injected by script, one per card — a no-JS visitor never sees
+         them, so unlike .badge-individual (which is content the page
+         has an opinion about either way) these need no .js-only
+         scaffolding: without JS they simply never exist. Absolute
+         rather than laid out in flow, so marking a card favorite or
+         visited never reflows its rows; .card-name reserves the room
+         for them instead (html.js .card-name below). */
+      .card-actions {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.85rem;
+        display: flex;
+        gap: 0.3rem;
+      }
+      .card-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--paper-card);
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1;
+        padding: 0;
+        cursor: pointer;
+        transition:
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          background var(--t-fast) var(--ease);
+      }
+      .card-action-btn:hover {
+        border-color: var(--pine);
+        color: var(--ink);
+      }
+      .fav-btn.is-active {
+        border-color: var(--rust);
+        background: var(--tint-amber);
+        color: var(--amber-ink);
+      }
+      .visited-btn.is-active {
+        border-color: var(--pine);
+        background: var(--tint-pine);
+        color: var(--pine-deep);
+      }
+      /* Icon rather than a character, same reasoning as .search-wrap::before
+         — a link glyph is missing from most text fonts and would land at a
+         different size on each platform next to the star/check text glyphs
+         either side of it. */
+      .share-btn::before {
+        content: "";
+        display: block;
+        width: 14px;
+        height: 14px;
+        background: currentColor;
+        -webkit-mask: var(--icon-link) center / contain no-repeat;
+        mask: var(--icon-link) center / contain no-repeat;
+      }
+      html.js .card {
+        position: relative;
+      }
+      /* Room for three .card-action-btn circles (26px, 0.3rem gap) plus
+         the card's own right offset — widened from the two-button figure
+         when the share button joined fav/visited. */
+      html.js .card-name {
+        padding-right: 5.85rem;
+      }
+
       .card-price {
         font-family: var(--mono);
         font-size: 0.775rem;
@@ -1180,6 +1252,10 @@
       html.js .card.personal-off {
         display: none;
       }
+      html.js .card.favorite-off,
+      html.js .card.visited-off {
+        display: none;
+      }
       .subgroup.hidden {
         display: none;
       }
@@ -1194,6 +1270,16 @@
         font-family: var(--mono);
         font-size: 0.85rem;
         display: none;
+      }
+      .empty-state .empty-filter {
+        color: var(--ink);
+        text-decoration: underline dotted;
+        text-underline-offset: 2px;
+        cursor: pointer;
+      }
+      .empty-state .empty-filter:hover,
+      .empty-state .empty-filter:focus-visible {
+        color: var(--rust);
       }
 
       /* The disclaimer and the licence block are the longest prose on the
@@ -1328,10 +1414,15 @@
         font-style: italic;
       }
 
-      /* Points the reader back at the control the notice above names —
-         a ring that blooms and fades around the pill, since the toggle
-         itself never moves or changes state to draw the eye on its own. */
-      .personal-toggle-wrap.toggle-flash {
+      /* Points the reader back at the control a notice or empty-state
+         filter named — a ring that blooms and fades around it, since
+         the control itself never moves or changes state to draw the
+         eye on its own. Shared by every filter control a reader can be
+         pointed back at: the personal-contacts/favorites/visited pills,
+         a category chip, and the search box. */
+      .toggle-pill.toggle-flash,
+      .chip.toggle-flash,
+      .search-wrap.toggle-flash {
         animation: togglePillFlash 1.2s var(--ease) 1;
       }
       @keyframes togglePillFlash {
@@ -1346,16 +1437,21 @@
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        .personal-toggle-wrap.toggle-flash {
+        .toggle-pill.toggle-flash,
+        .chip.toggle-flash,
+        .search-wrap.toggle-flash {
           animation: none;
           box-shadow: 0 0 0 3px var(--pine);
         }
       }
 
-      /* Search box and the personal-contacts chip as one row: flex-wrap
-         puts the chip beside the search box whenever both fit at their
-         natural width, and drops it to a centred second line once they
-         don't — no breakpoint needed, the wrap does the work. */
+      /* Search box and the three toggle pills as one row: flex-wrap puts
+         the pills beside the search box whenever both fit at their
+         natural width, and drops them to a centred second line — as one
+         group, never split pill-from-pill — once they don't. No
+         breakpoint needed, the wrap does the work. Once dropped to its
+         own line, the group is scaled rather than wrapped or scrolled
+         further — see .toggle-row below. */
       .search-row {
         display: flex;
         flex-wrap: wrap;
@@ -1369,10 +1465,73 @@
         min-width: 0;
         margin: 0;
       }
+      /* The three toggle pills, grouped so the row above wraps them
+         together or not at all — never one pill left dangling beside the
+         search box while its neighbours drop away. On a phone too narrow
+         for all three even alone on their own line, script (11-toggle-
+         fold.js) scales .toggle-row-inner down until it exactly fits
+         .toggle-row's width — a shrunk pill a reader can still read in
+         full beats a full-size one they have to scroll to find the rest
+         of. .toggle-row is the box that width is measured against and
+         that clamps to it (max-width:100%, same reasoning as the old
+         scrolling version this replaced: flex-shrink:0 alone only stops
+         the *parent's* shrink pass, not this element's own natural
+         width); overflow:hidden is a guard against sub-pixel rounding
+         after the scale is applied, not a real clip — the scale is
+         computed to remove the overflow, not to hide it. align-items is
+         flex-start rather than the flex default (stretch) because
+         script sets this element's own height explicitly to match the
+         scaled-down child (below) — stretch would then force that child
+         to *that* height too, corrupting the next natural-height
+         measurement into a runaway shrink on every recomputation.
+
+         justify-content stays centred only while nothing needs scaling
+         (the group fits its own wrapped line with room to spare, e.g. a
+         tablet width) — script adds .toggle-row-scaled once it doesn't.
+         A transform changes paint, not layout: the child keeps its full
+         unscaled width for layout purposes even after being scaled down,
+         so centering it would still centre *that* width, hanging half
+         the (now merely invisible, not gone) overflow off each side —
+         past the left edge, where nothing clips it back in. Flush left
+         means the overflow is entirely on the right, which .toggle-row's
+         own overflow:hidden actually catches, and which the scale was
+         computed to remove down to nothing anyway. */
+      .toggle-row {
+        display: flex;
+        align-items: flex-start;
+        flex-shrink: 0;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        justify-content: center;
+        transition: height var(--t-mid) var(--ease);
+      }
+      .toggle-row.toggle-row-scaled {
+        justify-content: flex-start;
+      }
+      /* Unconstrained on purpose — its natural (un-scaled) width is what
+         script measures to compute the scale above, so nothing here may
+         clamp it the way .toggle-row itself is clamped. transform-origin
+         top left: with the scale computed so the result exactly fills
+         .toggle-row's width, growing from that corner lands the scaled
+         row flush with .toggle-row's own edges without any extra
+         centring math. */
+      .toggle-row-inner {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.6rem;
+        transform-origin: top left;
+        transition: transform var(--t-mid) var(--ease);
+      }
       /* Cut from the same cloth as .chip — tinted pill, mono caps-free
          label — so it reads as a filter alongside the category chips
-         rather than as a settings control that wandered into the bar. */
-      .personal-toggle-wrap {
+         rather than as a settings control that wandered into the bar.
+         Shared by every toggle pill in the search row (personal
+         contacts, favorites, visited); a pill also carries its own
+         specific class (.personal-toggle-wrap etc.) for JS hooks that
+         are genuinely its own, such as the hidden-subcategories
+         notice's own preference-loading logic. */
+      .toggle-pill {
         display: flex;
         align-items: center;
         flex-shrink: 0;
@@ -1408,11 +1567,11 @@
           max-height var(--t-mid) var(--ease) var(--t-fold-lead),
           padding var(--t-mid) var(--ease) var(--t-fold-lead);
       }
-      .personal-toggle-wrap:hover {
+      .toggle-pill:hover {
         border-color: var(--pine);
         color: var(--ink);
       }
-      .personal-toggle-wrap.active {
+      .toggle-pill.active {
         border-color: var(--pine);
         color: var(--ink);
       }
@@ -1426,7 +1585,7 @@
          reads as folding away rather than just vanishing. pointer-events
          drops immediately (it isn't something a transition can ease) so a
          fading pill can't still be tapped mid-animation. */
-      .personal-toggle-wrap.toggle-folded {
+      .toggle-pill.toggle-folded {
         transition:
           border-color var(--t-fast) var(--ease),
           color var(--t-fast) var(--ease),
@@ -1733,6 +1892,46 @@
       }
       .pwa-install-notice-dismiss:hover {
         color: var(--body);
+      }
+
+      /* Explanation popup for the Favorites/Visited star and check, since
+         neither glyph reads as a button on its own. Anchored by script to
+         whichever one is hovered, focused, or tapped — one shared element
+         repositioned per button rather than one per card, same reasoning
+         as .copy-toast being a single instance. Above the map panel for
+         the same reason .copy-toast is: the pair of buttons is also on
+         the card cloned into a marker's popup. */
+      .action-tooltip {
+        position: fixed;
+        z-index: 50;
+        max-width: calc(100vw - 1.2rem);
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+        color: var(--paper-card);
+        background: var(--ink);
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
+        padding: 0.4rem 0.75rem;
+        box-shadow: var(--elev-2);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translate(-50%, 0.25rem);
+        transition:
+          opacity 0.15s,
+          visibility 0.15s,
+          transform 0.15s;
+      }
+      .action-tooltip.action-tooltip-below {
+        transform: translate(-50%, -0.25rem);
+      }
+      .action-tooltip.action-tooltip-shown {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
       }
 
       /* ---- Map preview -------------------------------------------------
@@ -2240,6 +2439,44 @@
       .mapview-spot.is-on svg {
         width: 19px;
         height: 19px;
+      }
+      /* A ring added around the mark rather than a change to its size or
+         colour — favorite/visited is a note about the entry, not a
+         different kind of place, so the category sign underneath stays
+         legible and every size used by the clustering math (groupRadius
+         in 09-map.js) is untouched. Stacks with .is-on's own elevated
+         shadow rather than replacing it. */
+      .mapview-spot.is-favorite {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 1px 3px var(--shadow-strong);
+      }
+      .mapview-spot.is-visited {
+        box-shadow:
+          0 0 0 2px var(--pine-deep),
+          0 1px 3px var(--shadow-strong);
+      }
+      .mapview-spot.is-favorite.is-visited {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 0 0 4px var(--pine-deep),
+          0 1px 3px var(--shadow-strong);
+      }
+      .mapview-spot.is-on.is-favorite {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 3px 10px var(--shadow-strong);
+      }
+      .mapview-spot.is-on.is-visited {
+        box-shadow:
+          0 0 0 2px var(--pine-deep),
+          0 3px 10px var(--shadow-strong);
+      }
+      .mapview-spot.is-on.is-favorite.is-visited {
+        box-shadow:
+          0 0 0 2px var(--amber-ink),
+          0 0 0 4px var(--pine-deep),
+          0 3px 10px var(--shadow-strong);
       }
       /* A gathering, not a place — so pine rather than rust, and sized by
          how much it is holding. */
@@ -3281,18 +3518,46 @@
             type="text"
           />
         </div>
-        <label
-          aria-label="Hide most personal contacts (individuals, not businesses)"
-          class="js-only personal-toggle-wrap"
-          for="personalToggle"
-          title="Hide most personal contacts (individuals, not businesses)"
-        >
-          <span class="switch">
-            <input type="checkbox" id="personalToggle" />
-            <span class="switch-track"></span>
-          </span>
-          <span>Hide individuals</span>
-        </label>
+        <div class="toggle-row">
+          <div class="toggle-row-inner">
+            <label
+              aria-label="Hide most personal contacts (individuals, not businesses)"
+              class="js-only toggle-pill personal-toggle-wrap"
+              for="personalToggle"
+              title="Hide most personal contacts (individuals, not businesses)"
+            >
+              <span class="switch">
+                <input type="checkbox" id="personalToggle" />
+                <span class="switch-track"></span>
+              </span>
+              <span>Hide individuals</span>
+            </label>
+            <label
+              aria-label="Show only entries marked as favorites"
+              class="js-only toggle-pill favorites-toggle-wrap"
+              for="favoritesToggle"
+              title="Show only entries marked as favorites"
+            >
+              <span class="switch">
+                <input type="checkbox" id="favoritesToggle" />
+                <span class="switch-track"></span>
+              </span>
+              <span>Favorites</span>
+            </label>
+            <label
+              aria-label="Show only entries marked as visited"
+              class="js-only toggle-pill visited-toggle-wrap"
+              for="visitedToggle"
+              title="Show only entries marked as visited"
+            >
+              <span class="switch">
+                <input type="checkbox" id="visitedToggle" />
+                <span class="switch-track"></span>
+              </span>
+              <span>Visited</span>
+            </label>
+          </div>
+        </div>
       </div>
       <div class="chip-scroll-wrap">
         <button
@@ -15005,6 +15270,70 @@
 
       var activeCat = "all";
 
+      // Scrolls a filter control in the sticky bar into view and flashes it, so
+      // a reader can jump from "why is this filtered" straight to the control
+      // responsible without hunting for a pill that may have folded off-screen
+      // (see 11-toggle-fold.js) on a narrow, scrolled-down viewport. Shared by
+      // the empty-state filter list below and the hidden-subcategories notice
+      // in 06-personal-contacts.js.
+      function flashControl(el) {
+        if (!el) return;
+        function onScreen() {
+          var cs = window.getComputedStyle(el);
+          if (parseFloat(cs.opacity) < 0.5) return false;
+          var r = el.getBoundingClientRect();
+          var vh = window.innerHeight || document.documentElement.clientHeight;
+          return r.height > 8 && r.top >= 0 && r.bottom <= vh;
+        }
+        function flash() {
+          el.classList.remove("toggle-flash");
+          void el.offsetWidth;
+          el.classList.add("toggle-flash");
+          clearTimeout(el._flashTimeout);
+          el._flashTimeout = setTimeout(function () {
+            el.classList.remove("toggle-flash");
+          }, 1300);
+        }
+        if (onScreen()) {
+          flash();
+          return;
+        }
+        // Wait for the scroll to actually land before flashing — flashing
+        // mid-scroll points at nothing, since the pill isn't where the reader
+        // is looking yet. scrollend is the true signal; the timeout is only a
+        // backstop for a browser without it.
+        var settled = false;
+        function onSettled() {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener("scrollend", onSettled);
+          clearTimeout(fallback);
+          flash();
+        }
+        window.addEventListener("scrollend", onSettled);
+        var fallback = setTimeout(onSettled, 2000);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      // A clickable word inside the empty-state message that points back at
+      // the control responsible — same reasoning as the hidden-subcategories
+      // notice, but per filter rather than one notice for the whole toggle.
+      function makeEmptyFilterEl(label, onActivate) {
+        var span = document.createElement("span");
+        span.className = "empty-filter";
+        span.setAttribute("role", "button");
+        span.setAttribute("tabindex", "0");
+        span.textContent = label;
+        span.addEventListener("click", onActivate);
+        span.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+            e.preventDefault();
+            onActivate();
+          }
+        });
+        return span;
+      }
+
       // A term matches only at the start of a word in data-search, so "bar"
       // finds "Barber" and "Bar B.Q." but not the "bar" buried in "Gambaryan".
       // Anything that is not an ASCII letter or digit counts as a word break,
@@ -15028,10 +15357,8 @@
       }
 
       function applyFilters() {
-        var q = document
-          .getElementById("searchInput")
-          .value.trim()
-          .toLowerCase();
+        var rawQuery = document.getElementById("searchInput").value.trim();
+        var q = rawQuery.toLowerCase();
         // every whitespace-separated token must start a word in data-search,
         // so "dentist vardanants" matches a card holding both, in any order
         var terms = q ? q.split(/\s+/) : [];
@@ -15051,10 +15378,13 @@
             }
           }
           var show = matchesCat && matchesSearch;
-          var isPersonalHidden = card.className.indexOf("personal-off") !== -1;
+          var isFilteredOff =
+            card.className.indexOf("personal-off") !== -1 ||
+            card.className.indexOf("favorite-off") !== -1 ||
+            card.className.indexOf("visited-off") !== -1;
           if (show) {
             card.className = card.className.replace(/\bhidden\b/g, "");
-            if (!isPersonalHidden) {
+            if (!isFilteredOff) {
               visibleCount++;
             }
           } else {
@@ -15068,8 +15398,9 @@
         for (var j = 0; j < subgroups.length; j++) {
           var sg = subgroups[j];
           var anyVisible =
-            sg.querySelectorAll(".card:not(.hidden):not(.personal-off)")
-              .length > 0;
+            sg.querySelectorAll(
+              ".card:not(.hidden):not(.personal-off):not(.favorite-off):not(.visited-off)",
+            ).length > 0;
           if (anyVisible) {
             sg.className = sg.className.replace(/\bhidden\b/g, "");
           } else if (sg.className.indexOf("hidden") === -1) {
@@ -15081,8 +15412,9 @@
         for (var k = 0; k < sections.length; k++) {
           var sec = sections[k];
           var anyVis =
-            sec.querySelectorAll(".card:not(.hidden):not(.personal-off)")
-              .length > 0;
+            sec.querySelectorAll(
+              ".card:not(.hidden):not(.personal-off):not(.favorite-off):not(.visited-off)",
+            ).length > 0;
           if (anyVis) {
             sec.className = sec.className.replace(/\bhidden\b/g, "");
           } else if (sec.className.indexOf("hidden") === -1) {
@@ -15095,7 +15427,77 @@
           visibleCount + (visibleCount === 1 ? " entry" : " entries");
 
         var emptyEl = document.getElementById("emptyState");
-        emptyEl.style.display = visibleCount === 0 ? "block" : "none";
+        if (visibleCount === 0) {
+          var onFilters = [];
+          var searchInput = document.getElementById("searchInput");
+          if (terms.length) {
+            onFilters.push(
+              makeEmptyFilterEl('search "' + rawQuery + '"', function () {
+                flashControl(searchInput ? searchInput.closest(".search-wrap") : null);
+                if (searchInput) {
+                  searchInput.focus();
+                  searchInput.select();
+                }
+              }),
+            );
+          }
+          if (activeCat !== "all") {
+            var chips = document.querySelectorAll(".chip");
+            var activeChip = null;
+            for (var c = 0; c < chips.length; c++) {
+              if (chips[c].getAttribute("data-cat") === activeCat) {
+                activeChip = chips[c];
+                break;
+              }
+            }
+            onFilters.push(
+              makeEmptyFilterEl('category "' + activeCat + '"', function () {
+                flashControl(activeChip);
+              }),
+            );
+          }
+          var personalToggle = document.getElementById("personalToggle");
+          if (personalToggle && personalToggle.checked) {
+            onFilters.push(
+              makeEmptyFilterEl("personal contacts hidden", function () {
+                flashControl(personalToggle.closest(".personal-toggle-wrap"));
+              }),
+            );
+          }
+          var favToggle = document.getElementById("favoritesToggle");
+          if (favToggle && favToggle.checked) {
+            onFilters.push(
+              makeEmptyFilterEl("favorites", function () {
+                flashControl(favToggle.closest(".favorites-toggle-wrap"));
+              }),
+            );
+          }
+          var visitedToggle = document.getElementById("visitedToggle");
+          if (visitedToggle && visitedToggle.checked) {
+            onFilters.push(
+              makeEmptyFilterEl("visited", function () {
+                flashControl(visitedToggle.closest(".visited-toggle-wrap"));
+              }),
+            );
+          }
+          emptyEl.textContent = "";
+          if (onFilters.length) {
+            emptyEl.appendChild(document.createTextNode("No entries match with "));
+            for (var f = 0; f < onFilters.length; f++) {
+              if (f > 0) {
+                var sep = f === onFilters.length - 1 ? " and " : ", ";
+                emptyEl.appendChild(document.createTextNode(sep));
+              }
+              emptyEl.appendChild(onFilters[f]);
+            }
+            emptyEl.appendChild(document.createTextNode(" on."));
+          } else {
+            emptyEl.textContent = "No entries match that search. Try a shorter word.";
+          }
+          emptyEl.style.display = "block";
+        } else {
+          emptyEl.style.display = "none";
+        }
       }
 
       applyFilters();
@@ -15380,8 +15782,30 @@
             for (var i = 0; i < hiddenEls.length; i++) {
               hiddenEls[i].className = hiddenEls[i].className
                 .replace(/\bhidden\b/g, "")
+                .replace(/\bfavorite-off\b/g, "")
+                .replace(/\bvisited-off\b/g, "")
                 .replace(/\s+/g, " ")
                 .replace(/^\s|\s$/g, "");
+            }
+
+            // Favorites/visited marks are this device's own notes, kept in
+            // this browser's storage — a saved copy opened somewhere else
+            // starts with none, same as the "Hide individuals" toggle above.
+            // The buttons themselves are re-injected by script on load (see
+            // 12-favorites-visited.js's own-card guard), so the clone just
+            // drops today's copies rather than carrying stale is-active state
+            // into whatever loads the file next.
+            var cloneActions = clone.querySelectorAll(".card-actions");
+            for (var y = 0; y < cloneActions.length; y++) {
+              cloneActions[y].parentNode.removeChild(cloneActions[y]);
+            }
+            var cloneFavToggle = clone.querySelector("#favoritesToggle");
+            if (cloneFavToggle) {
+              cloneFavToggle.removeAttribute("checked");
+            }
+            var cloneVisitedToggle = clone.querySelector("#visitedToggle");
+            if (cloneVisitedToggle) {
+              cloneVisitedToggle.removeAttribute("checked");
             }
 
             // Reset chip active state back to just "All".
@@ -15882,52 +16306,11 @@
           notice.setAttribute("tabindex", "0");
           notice.title = "Show the toggle that's hiding these";
 
-          // Checked directly rather than inferred from .toggle-folded: past
-          // the foot of the directory (About section, footer) the bar isn't
-          // sticky any more and scrolls away with everything else, on any
-          // viewport width, folded or not. The opacity check is what catches
-          // the fold itself — folded still leaves a couple of border pixels
-          // in the box (max-height zeroes out but border-width doesn't), so
-          // geometry alone reads a folded pill as "on screen".
-          function toggleOnScreen() {
-            var cs = window.getComputedStyle(wrap);
-            if (parseFloat(cs.opacity) < 0.5) return false;
-            var r = wrap.getBoundingClientRect();
-            var vh = window.innerHeight || document.documentElement.clientHeight;
-            return r.height > 8 && r.top >= 0 && r.bottom <= vh;
-          }
-
-          var flashTimer;
-          function flash() {
-            wrap.classList.remove("toggle-flash");
-            void wrap.offsetWidth;
-            wrap.classList.add("toggle-flash");
-            clearTimeout(flashTimer);
-            flashTimer = setTimeout(function () {
-              wrap.classList.remove("toggle-flash");
-            }, 1300);
-          }
-
+          // flashControl (02-filtering.js) does the actual scroll-into-view
+          // and flash — shared with the empty-state filter list, which points
+          // back at this same pill among others.
           function highlightToggle() {
-            if (toggleOnScreen()) {
-              flash();
-              return;
-            }
-            // Wait for the scroll to actually land before flashing — flashing
-            // mid-scroll points at nothing, since the pill isn't where the
-            // reader is looking yet. scrollend is the true signal; the
-            // timeout is only a backstop for a browser without it.
-            var settled = false;
-            function onSettled() {
-              if (settled) return;
-              settled = true;
-              window.removeEventListener("scrollend", onSettled);
-              clearTimeout(fallback);
-              flash();
-            }
-            window.addEventListener("scrollend", onSettled);
-            var fallback = setTimeout(onSettled, 2000);
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            flashControl(wrap);
           }
 
           notice.addEventListener("click", highlightToggle);
@@ -16894,6 +17277,30 @@
           }
           return spots;
         }
+        // A ring only — see .mapview-spot.is-favorite/.is-visited — added to
+        // a marker that is already drawn, never a change to its size, so it
+        // costs nothing the clustering math in groupSpots/spreadSpots has to
+        // know about. 12-favorites-visited.js owns the actual state (it
+        // persists to storage and draws the card's own star/check); this
+        // only reads it back at the one place a marker's class string is
+        // written, below.
+        function spotMarkClasses(s) {
+          var out = "";
+          if (typeof window.isFavoriteCard === "function" && window.isFavoriteCard(s.card)) {
+            out += " is-favorite";
+          }
+          if (typeof window.isVisitedCard === "function" && window.isVisitedCard(s.card)) {
+            out += " is-visited";
+          }
+          return out;
+        }
+        // Exposed so 12-favorites-visited.js can ask for a repaint after a
+        // mark changes — markSpots below is otherwise only run when the zoom
+        // or the selection changes, neither of which a star or check press
+        // is.
+        window.mapSyncFavoriteVisited = function () {
+          markSpots();
+        };
         // How wide the disc for a gathering of n is drawn, halved. Kept
         // beside the stylesheet's sizes, since the grouping below has to
         // know how much room each one will take before it draws it.
@@ -17190,7 +17597,8 @@
             var s = spots[i];
             var picked = s === on;
             s.el.style.display = !picked && s.group ? "none" : "";
-            s.el.className = "mapview-spot" + (picked ? " is-on" : "");
+            s.el.className =
+              "mapview-spot" + (picked ? " is-on" : "") + spotMarkClasses(s);
           }
         }
         /* ---- The card, over its marker ------------------------------------
@@ -19087,59 +19495,119 @@
         schedule();
       })();
 
-      /* On a narrow viewport the "Hide individuals" toggle drops to its own line
-         below the search box (.search-row's flex-wrap, no fixed breakpoint) —
-         see the CSS comment on .personal-toggle-wrap.toggle-folded. Once it has
-         a line to itself, it also has a line to give back: this folds it away
-         as soon as the reader scrolls past the top of the directory and brings
+      /* On a narrow viewport the toggle-pill group (personal contacts,
+         favorites, visited — grouped in .toggle-row-inner so they wrap
+         together, never pill-from-pill) drops to its own line below the
+         search box (.search-row's flex-wrap, no fixed breakpoint) — see the
+         CSS comment on .toggle-pill.toggle-folded. Once the group has a line
+         to itself, it also has a line to give back: this folds it away as
+         soon as the reader scrolls past the top of the directory and brings
          it back once they scroll back up to it, same sentinel technique as
-         07-back-to-top.js. Wrapped state is measured, not assumed, since it
-         depends on content width rather than viewport width. */
+         07-back-to-top.js.
+
+         The same narrow-viewport trigger also covers a second problem: a
+         phone too narrow even for the group alone on its own line. Rather
+         than let it wrap pill-by-pill (defeating the grouping above) or
+         scroll out of sight, fitToggleRow scales .toggle-row-inner down by
+         whatever factor makes it exactly as wide as .toggle-row, its
+         (CSS-clamped) container — see the CSS comments on .toggle-row and
+         .toggle-row-inner for why that container's width is reliable to
+         measure against even though its child is wider. */
       (function () {
-        var wrap = document.querySelector(".personal-toggle-wrap");
+        var wraps = document.querySelectorAll(".toggle-pill");
         var searchWrap = document.querySelector(".search-wrap");
         var sentinel = document.querySelector(".toggle-top-sentinel");
-        if (!wrap || !searchWrap || !sentinel || !window.IntersectionObserver) {
+        var toggleRow = document.querySelector(".toggle-row");
+        var toggleRowInner = document.querySelector(".toggle-row-inner");
+        if (!wraps.length || !searchWrap || !sentinel || !window.IntersectionObserver) {
           return;
         }
 
         var atTop = true;
-        var wrapped = false;
 
         function update() {
-          wrap.classList.toggle("toggle-folded", wrapped && !atTop);
+          for (var i = 0; i < wraps.length; i++) {
+            wraps[i].classList.toggle(
+              "toggle-folded",
+              wraps[i]._wrapped && !atTop,
+            );
+          }
         }
 
         function checkWrapped() {
-          var wasFolded = wrap.classList.contains("toggle-folded");
-          if (wasFolded) wrap.classList.remove("toggle-folded");
-          // On the same line the two sit close in top offset (align-items:center
-          // just staggers them a couple px for their differing heights); wrapped
-          // to its own line, the toggle's top lands at or past the search box's
-          // bottom edge.
-          wrapped =
-            wrap.getBoundingClientRect().top >=
-            searchWrap.getBoundingClientRect().bottom - 2;
-          if (wasFolded) wrap.classList.add("toggle-folded");
+          for (var i = 0; i < wraps.length; i++) {
+            var wrap = wraps[i];
+            var wasFolded = wrap.classList.contains("toggle-folded");
+            if (wasFolded) wrap.classList.remove("toggle-folded");
+            // On the same line the pills sit close in top offset (align-items:
+            // center just staggers them a couple px for their differing
+            // heights); wrapped to its own line, a pill's top lands at or past
+            // the search box's bottom edge.
+            wrap._wrapped =
+              wrap.getBoundingClientRect().top >=
+              searchWrap.getBoundingClientRect().bottom - 2;
+            if (wasFolded) wrap.classList.add("toggle-folded");
+          }
           update();
         }
 
-        checkWrapped();
-        if (document.fonts && document.fonts.ready) {
-          document.fonts.ready.then(checkWrapped).catch(function () {});
+        // offsetWidth/offsetHeight are the element's own layout box, unlike
+        // getBoundingClientRect — they ignore the element's own transform (an
+        // ancestor's would still count, but neither element here has one from
+        // outside this function), so this reads the *pre-scale* size even
+        // after a previous call has already scaled .toggle-row-inner down.
+        // No reset-then-remeasure step needed.
+        function fitToggleRow() {
+          if (!toggleRow || !toggleRowInner) return;
+          var naturalW = toggleRowInner.offsetWidth;
+          var availW = toggleRow.clientWidth;
+          if (!naturalW || !availW || naturalW <= availW) {
+            toggleRowInner.style.transform = "";
+            toggleRow.style.height = "";
+            toggleRow.classList.remove("toggle-row-scaled");
+            return;
+          }
+          var naturalH = toggleRowInner.offsetHeight;
+          var scale = availW / naturalW;
+          toggleRowInner.style.transform = "scale(" + scale + ")";
+          toggleRow.style.height = Math.ceil(naturalH * scale) + "px";
+          // See the CSS comment on .toggle-row-scaled — centering would still
+          // centre the pre-transform width and hang half the overflow off the
+          // left, past where overflow:hidden can catch it.
+          toggleRow.classList.add("toggle-row-scaled");
         }
 
-        var resizeTimer;
+        checkWrapped();
+        fitToggleRow();
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(function () {
+            checkWrapped();
+            fitToggleRow();
+          }).catch(function () {});
+        }
+
+        // rAF-throttled rather than debounced: a debounce only recomputes
+        // once the reader stops resizing, which combined with the CSS
+        // transition above (transform/height) reads as one long stall
+        // followed by a sudden jump. This instead recomputes on every frame
+        // a resize is still happening, so the transition has something fresh
+        // to ease toward throughout the drag rather than only at the end.
+        var resizePending = false;
         window.addEventListener("resize", function () {
-          clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(checkWrapped, 100);
+          if (resizePending) return;
+          resizePending = true;
+          requestAnimationFrame(function () {
+            resizePending = false;
+            checkWrapped();
+            fitToggleRow();
+          });
         });
 
         // Hysteresis, not a single line: the sentinel has real height (see its
         // CSS), and only its fully-in (ratio 1) and fully-out (ratio 0) ends
         // flip the state. Scroll positions inside that band change nothing, so
         // the couple of px of elastic overscroll bounce at the very top of the
-        // page can't make the toggle flicker in and out.
+        // page can't make the toggles flicker in and out.
         new IntersectionObserver(
           function (entries) {
             var ratio = entries[entries.length - 1].intersectionRatio;
@@ -19149,6 +19617,410 @@
           },
           { threshold: [0, 1] },
         ).observe(sentinel);
+      })();
+
+      /* "Favorites" and "Visited" — two independent marks a reader can put on
+         any entry, kept on this device only (localStorage, with the same
+         cookie fallback the personal-contacts toggle uses for a browser that
+         withholds one of the two). There is no server and no account, so a
+         mark made here never reaches anyone else's copy of the page — see
+         the "Favorites" / "Visited" toggles below for how a reader
+         narrows the list down to what they've marked.
+
+         Cards carry no ID of their own to key a mark against, so one is built
+         from what's already on the card: its category plus its name, lower-
+         cased. That is also what lets a mark made from the map's own popup
+         card (09-map.js clones a card wholesale into it) land on the same
+         entry as the page's own copy without the two ever sharing a DOM
+         node — the key is read off content, not identity. */
+      (function () {
+        var FAV_KEY = "vanadzor_favorites";
+        var VISITED_KEY = "vanadzor_visited";
+
+        function cardKey(card) {
+          var nameEl = card.querySelector(".card-name");
+          var name = nameEl ? nameEl.textContent : "";
+          var cat = card.getAttribute("data-cat") || "";
+          return (cat + "||" + name).toLowerCase().replace(/\s+/g, " ").trim();
+        }
+
+        function saveSet(storageKey, set) {
+          var keys = [];
+          for (var k in set) {
+            if (set[k]) keys.push(k);
+          }
+          var value = JSON.stringify(keys);
+          try {
+            localStorage.setItem(storageKey, value);
+          } catch (e) {}
+          try {
+            var date = new Date();
+            date.setTime(date.getTime() + 365 * 24 * 60 * 60 * 1000);
+            document.cookie =
+              storageKey +
+              "=" +
+              encodeURIComponent(value) +
+              "; expires=" +
+              date.toUTCString() +
+              "; path=/; SameSite=Lax";
+          } catch (e) {}
+        }
+
+        function loadSet(storageKey) {
+          var raw = null;
+          try {
+            raw = localStorage.getItem(storageKey);
+          } catch (e) {}
+          if (raw === null) {
+            try {
+              var pairs = document.cookie.split(";");
+              for (var i = 0; i < pairs.length; i++) {
+                var pair = pairs[i].replace(/^\s+/, "");
+                if (pair.indexOf(storageKey + "=") === 0) {
+                  raw = decodeURIComponent(
+                    pair.substring(storageKey.length + 1),
+                  );
+                  break;
+                }
+              }
+            } catch (e) {}
+          }
+          var set = {};
+          if (raw) {
+            try {
+              var keys = JSON.parse(raw);
+              for (var j = 0; j < keys.length; j++) {
+                set[keys[j]] = true;
+              }
+            } catch (e) {}
+          }
+          return set;
+        }
+
+        var isOfflineSnapshot =
+          document.documentElement.getAttribute("data-offline-snapshot") === "1";
+        var favorites = isOfflineSnapshot ? {} : loadSet(FAV_KEY);
+        var visited = isOfflineSnapshot ? {} : loadSet(VISITED_KEY);
+
+        function isFavoriteCard(card) {
+          return !!favorites[cardKey(card)];
+        }
+        function isVisitedCard(card) {
+          return !!visited[cardKey(card)];
+        }
+        // Exposed for 09-map.js, which has no other way to ask what a marker
+        // stands for without reaching back into a module that comes after it
+        // in the concatenated script.
+        window.isFavoriteCard = isFavoriteCard;
+        window.isVisitedCard = isVisitedCard;
+
+        function syncMap() {
+          if (typeof window.mapSyncFavoriteVisited === "function") {
+            window.mapSyncFavoriteVisited();
+          }
+        }
+
+        // Favorited cards lead their subgroup, in the order they were
+        // favorited-into-view (i.e. their existing relative order among
+        // themselves), with everything else following in its original order.
+        // Grid spans set by masonry.js are per-card, not positional, so
+        // reordering here needs no relayout of its own.
+        //
+        // Not run on every star/unstar — a card jumping to the top of a long
+        // subgroup mid-read was more disruptive than useful. Instead this
+        // runs on load and again whenever the reader starts a new search, so
+        // a freshly favorited entry settles into place the next time the
+        // list itself is about to change anyway, rather than out from under
+        // whatever the reader is currently looking at.
+        function reorderFavorites() {
+          var grids = document.querySelectorAll(".card-grid");
+          for (var g = 0; g < grids.length; g++) {
+            var grid = grids[g];
+            var cards = Array.prototype.slice.call(grid.children);
+            var favs = cards.filter(isFavoriteCard);
+            if (!favs.length) continue;
+            var rest = cards.filter(function (c) {
+              return !isFavoriteCard(c);
+            });
+            var ordered = favs.concat(rest);
+            for (var i = 0; i < ordered.length; i++) {
+              grid.appendChild(ordered[i]);
+            }
+          }
+        }
+
+        // Every card sharing a key gets the same visual state — the page's
+        // own copy and, while the map panel holds a cloned card of the same
+        // entry, that clone too, so a tap on either reads back on both
+        // without either one being told about the other directly.
+        function refreshCard(card) {
+          var key = cardKey(card);
+          var fav = !!favorites[key];
+          var vis = !!visited[key];
+          var favBtn = card.querySelector(".fav-btn");
+          var visitedBtn = card.querySelector(".visited-btn");
+          if (favBtn) {
+            favBtn.classList.toggle("is-active", fav);
+            favBtn.setAttribute("aria-pressed", fav ? "true" : "false");
+            favBtn.textContent = fav ? "★" : "☆";
+            favBtn.setAttribute(
+              "aria-label",
+              fav ? "Remove from favorites" : "Add to favorites",
+            );
+          }
+          if (visitedBtn) {
+            visitedBtn.classList.toggle("is-active", vis);
+            visitedBtn.setAttribute("aria-pressed", vis ? "true" : "false");
+            visitedBtn.textContent = vis ? "✓" : "○";
+            visitedBtn.setAttribute(
+              "aria-label",
+              vis ? "Mark as not visited" : "Mark as visited",
+            );
+          }
+        }
+
+        function refreshAllWithKey(key) {
+          var cards = document.querySelectorAll(".card");
+          for (var i = 0; i < cards.length; i++) {
+            if (cardKey(cards[i]) === key) refreshCard(cards[i]);
+          }
+        }
+
+        function applyOnlyFilter(only, className, set) {
+          var cards = document.querySelectorAll(".card");
+          for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var shouldHide = only && !set[cardKey(card)];
+            if (shouldHide) {
+              if (card.className.indexOf(className) === -1) {
+                card.className = card.className + " " + className;
+              }
+            } else {
+              card.className = card.className
+                .replace(new RegExp("\\b" + className + "\\b", "g"), "")
+                .replace(/\s+/g, " ")
+                .replace(/^\s|\s$/g, "");
+            }
+          }
+        }
+
+        function toggleMark(card, storageKey, set, btn) {
+          var key = cardKey(card);
+          if (set[key]) {
+            delete set[key];
+          } else {
+            set[key] = true;
+          }
+          saveSet(storageKey, set);
+          refreshAllWithKey(key);
+          // Text changed under it (Add to -> Now in) — show it again rather
+          // than leave the stale pre-toggle wording up, and on a touch tap
+          // there was never a hover to have shown it in the first place.
+          // Has to run before the "only" filter below can hide this button —
+          // a hidden button's getBoundingClientRect() is all zeros, which
+          // sent the tooltip to the top-left corner for a frame.
+          if (btn) showTooltip(btn, lastPointerType === "touch");
+          // A star or check pressed on a card that a running "only" filter
+          // would now exclude has to take itself out of the list immediately,
+          // not wait for the toggle pill to be re-clicked.
+          if (favToggle && favToggle.checked) {
+            applyOnlyFilter(true, "favorite-off", favorites);
+          }
+          if (visitedToggle && visitedToggle.checked) {
+            applyOnlyFilter(true, "visited-off", visited);
+          }
+          if (typeof applyFilters === "function") applyFilters();
+          syncMap();
+        }
+
+        // Injected rather than shipped in the card markup — a no-JS visitor
+        // never sees these, same reasoning as .badge-individual's guard
+        // below, and there is nowhere to persist a mark without JS anyway.
+        // The guard also keeps a card cloned into the map's popup (which
+        // already carries its own .card-actions, copied along with the rest
+        // of the card) from getting a second pair of buttons appended.
+        function injectButtons() {
+          var cards = document.querySelectorAll(".card");
+          for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            if (card.querySelector(".card-actions")) continue;
+            var actions = document.createElement("div");
+            actions.className = "card-actions";
+
+            var favBtn = document.createElement("button");
+            favBtn.type = "button";
+            favBtn.className = "card-action-btn fav-btn";
+            actions.appendChild(favBtn);
+
+            var visitedBtn = document.createElement("button");
+            visitedBtn.type = "button";
+            visitedBtn.className = "card-action-btn visited-btn";
+            actions.appendChild(visitedBtn);
+
+            card.appendChild(actions);
+            refreshCard(card);
+          }
+        }
+
+        injectButtons();
+        reorderFavorites();
+
+        // One delegated listener catches both buttons everywhere a card can
+        // appear — the page's own grid and, while it's open, the map
+        // popup's cloned card — rather than binding to each button as it's
+        // created, which the popup's clone (built by cloneNode, not by this
+        // function) would never pick up.
+        document.addEventListener("click", function (e) {
+          var target = e.target;
+          if (!target || !target.closest) return;
+          var btn = target.closest(".fav-btn, .visited-btn");
+          if (!btn) return;
+          var card = btn.closest(".card");
+          if (!card) return;
+          e.preventDefault();
+          if (btn.classList.contains("fav-btn")) {
+            toggleMark(card, FAV_KEY, favorites, btn);
+          } else {
+            toggleMark(card, VISITED_KEY, visited, btn);
+          }
+        });
+
+        // Explanation popup, shared across every fav/visited button on the
+        // page (and on whichever one the map's popup has cloned) rather than
+        // one per button, same reasoning as copy-address.js's toast. Hover
+        // and keyboard focus show it and it stays up for as long as that
+        // lasts, since a mouse resting on the button can dismiss it by
+        // leaving; a tap has no "leaving" to speak of, so that path shows it
+        // and times it out instead, matching the copy-toast's own timing.
+        var tooltipEl = null;
+        var tooltipTimer = null;
+        var lastPointerType = "mouse";
+
+        function tooltipText(btn) {
+          var active = btn.classList.contains("is-active");
+          if (btn.classList.contains("fav-btn")) {
+            return active ? "Now in Favorites" : "Add to Favorites";
+          }
+          return active ? "Now in Visited" : "Add to Visited";
+        }
+
+        function hideTooltip() {
+          clearTimeout(tooltipTimer);
+          if (tooltipEl) tooltipEl.classList.remove("action-tooltip-shown");
+        }
+
+        function showTooltip(btn, autoHide) {
+          if (!tooltipEl) {
+            tooltipEl = document.createElement("div");
+            tooltipEl.className = "action-tooltip";
+            tooltipEl.setAttribute("role", "status");
+            document.body.appendChild(tooltipEl);
+          }
+          tooltipEl.textContent = tooltipText(btn);
+          tooltipEl.classList.remove("action-tooltip-below");
+          // Width/height read with the element already in the document but
+          // still visibility:hidden — that still lays it out, just doesn't
+          // paint it, so this is the real size the shown pill will have.
+          var w = tooltipEl.offsetWidth;
+          var h = tooltipEl.offsetHeight;
+          var rect = btn.getBoundingClientRect();
+          var gap = 8;
+          var top = rect.top - h - gap;
+          if (top < gap) {
+            top = rect.bottom + gap;
+            tooltipEl.classList.add("action-tooltip-below");
+          }
+          var left = rect.left + rect.width / 2;
+          var minLeft = w / 2 + gap;
+          var maxLeft = window.innerWidth - w / 2 - gap;
+          left = Math.max(minLeft, Math.min(maxLeft, left));
+          tooltipEl.style.left = left + "px";
+          tooltipEl.style.top = top + "px";
+          tooltipEl.classList.add("action-tooltip-shown");
+          clearTimeout(tooltipTimer);
+          if (autoHide) {
+            tooltipTimer = setTimeout(hideTooltip, 1600);
+          }
+        }
+
+        // Captured, not delegated normally, so it fires before the click
+        // listener above needs to know what pressed the button — pointerdown
+        // always precedes click.
+        document.addEventListener(
+          "pointerdown",
+          function (e) {
+            var btn =
+              e.target && e.target.closest && e.target.closest(".fav-btn, .visited-btn");
+            if (btn) lastPointerType = e.pointerType || "mouse";
+          },
+          true,
+        );
+
+        document.addEventListener("pointerover", function (e) {
+          if (e.pointerType === "touch") return;
+          var btn = e.target.closest && e.target.closest(".fav-btn, .visited-btn");
+          if (!btn) return;
+          showTooltip(btn, false);
+        });
+        document.addEventListener("pointerout", function (e) {
+          if (e.pointerType === "touch") return;
+          var btn = e.target.closest && e.target.closest(".fav-btn, .visited-btn");
+          if (!btn) return;
+          if (e.relatedTarget && btn.contains(e.relatedTarget)) return;
+          hideTooltip();
+        });
+        document.addEventListener("focusin", function (e) {
+          var btn = e.target.closest && e.target.closest(".fav-btn, .visited-btn");
+          if (btn) showTooltip(btn, false);
+        });
+        document.addEventListener("focusout", function (e) {
+          var btn = e.target.closest && e.target.closest(".fav-btn, .visited-btn");
+          if (btn) hideTooltip();
+        });
+
+        var favToggle = document.getElementById("favoritesToggle");
+        var visitedToggle = document.getElementById("visitedToggle");
+
+        // Enabling either "only" filter can leave the search bar stuck mid-page
+        // in its sticky position; scroll it back to its unstuck, top-of-page
+        // spot rather than leave it anchored where the reader happened to be.
+        function scrollToRealTop() {
+          if ((window.pageYOffset || document.documentElement.scrollTop) <= 0) {
+            return;
+          }
+          if (!window.scrollTo) return;
+          try {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } catch (err) {
+            window.scrollTo(0, 0);
+          }
+        }
+
+        if (favToggle) {
+          favToggle.addEventListener("change", function () {
+            applyOnlyFilter(favToggle.checked, "favorite-off", favorites);
+            var wrap = favToggle.closest(".favorites-toggle-wrap");
+            if (wrap) wrap.classList.toggle("active", favToggle.checked);
+            if (typeof applyFilters === "function") applyFilters();
+            if (favToggle.checked) scrollToRealTop();
+          });
+        }
+        if (visitedToggle) {
+          visitedToggle.addEventListener("change", function () {
+            applyOnlyFilter(visitedToggle.checked, "visited-off", visited);
+            var wrap = visitedToggle.closest(".visited-toggle-wrap");
+            if (wrap) wrap.classList.toggle("active", visitedToggle.checked);
+            if (typeof applyFilters === "function") applyFilters();
+            if (visitedToggle.checked) scrollToRealTop();
+          });
+        }
+
+        // A newly favorited card moves to the front of its subgroup here
+        // rather than at the moment it's starred — see reorderFavorites above.
+        var searchInput = document.getElementById("searchInput");
+        if (searchInput) {
+          searchInput.addEventListener("input", reorderFavorites);
+        }
       })();
 
       if ("serviceWorker" in navigator) {

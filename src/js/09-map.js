@@ -812,6 +812,30 @@
     }
     return spots;
   }
+  // A ring only — see .mapview-spot.is-favorite/.is-visited — added to
+  // a marker that is already drawn, never a change to its size, so it
+  // costs nothing the clustering math in groupSpots/spreadSpots has to
+  // know about. 12-favorites-visited.js owns the actual state (it
+  // persists to storage and draws the card's own star/check); this
+  // only reads it back at the one place a marker's class string is
+  // written, below.
+  function spotMarkClasses(s) {
+    var out = "";
+    if (typeof window.isFavoriteCard === "function" && window.isFavoriteCard(s.card)) {
+      out += " is-favorite";
+    }
+    if (typeof window.isVisitedCard === "function" && window.isVisitedCard(s.card)) {
+      out += " is-visited";
+    }
+    return out;
+  }
+  // Exposed so 12-favorites-visited.js can ask for a repaint after a
+  // mark changes — markSpots below is otherwise only run when the zoom
+  // or the selection changes, neither of which a star or check press
+  // is.
+  window.mapSyncFavoriteVisited = function () {
+    markSpots();
+  };
   // How wide the disc for a gathering of n is drawn, halved. Kept
   // beside the stylesheet's sizes, since the grouping below has to
   // know how much room each one will take before it draws it.
@@ -1108,7 +1132,8 @@
       var s = spots[i];
       var picked = s === on;
       s.el.style.display = !picked && s.group ? "none" : "";
-      s.el.className = "mapview-spot" + (picked ? " is-on" : "");
+      s.el.className =
+        "mapview-spot" + (picked ? " is-on" : "") + spotMarkClasses(s);
     }
   }
   /* ---- The card, over its marker ------------------------------------

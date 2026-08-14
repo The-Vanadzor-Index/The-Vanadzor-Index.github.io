@@ -1,5 +1,69 @@
 var activeCat = "all";
 
+// Scrolls a filter control in the sticky bar into view and flashes it, so
+// a reader can jump from "why is this filtered" straight to the control
+// responsible without hunting for a pill that may have folded off-screen
+// (see 11-toggle-fold.js) on a narrow, scrolled-down viewport. Shared by
+// the empty-state filter list below and the hidden-subcategories notice
+// in 06-personal-contacts.js.
+function flashControl(el) {
+  if (!el) return;
+  function onScreen() {
+    var cs = window.getComputedStyle(el);
+    if (parseFloat(cs.opacity) < 0.5) return false;
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    return r.height > 8 && r.top >= 0 && r.bottom <= vh;
+  }
+  function flash() {
+    el.classList.remove("toggle-flash");
+    void el.offsetWidth;
+    el.classList.add("toggle-flash");
+    clearTimeout(el._flashTimeout);
+    el._flashTimeout = setTimeout(function () {
+      el.classList.remove("toggle-flash");
+    }, 1300);
+  }
+  if (onScreen()) {
+    flash();
+    return;
+  }
+  // Wait for the scroll to actually land before flashing — flashing
+  // mid-scroll points at nothing, since the pill isn't where the reader
+  // is looking yet. scrollend is the true signal; the timeout is only a
+  // backstop for a browser without it.
+  var settled = false;
+  function onSettled() {
+    if (settled) return;
+    settled = true;
+    window.removeEventListener("scrollend", onSettled);
+    clearTimeout(fallback);
+    flash();
+  }
+  window.addEventListener("scrollend", onSettled);
+  var fallback = setTimeout(onSettled, 2000);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// A clickable word inside the empty-state message that points back at
+// the control responsible — same reasoning as the hidden-subcategories
+// notice, but per filter rather than one notice for the whole toggle.
+function makeEmptyFilterEl(label, onActivate) {
+  var span = document.createElement("span");
+  span.className = "empty-filter";
+  span.setAttribute("role", "button");
+  span.setAttribute("tabindex", "0");
+  span.textContent = label;
+  span.addEventListener("click", onActivate);
+  span.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      onActivate();
+    }
+  });
+  return span;
+}
+
 // A term matches only at the start of a word in data-search, so "bar"
 // finds "Barber" and "Bar B.Q." but not the "bar" buried in "Gambaryan".
 // Anything that is not an ASCII letter or digit counts as a word break,
@@ -23,10 +87,8 @@ function termMatches(blob, term) {
 }
 
 function applyFilters() {
-  var q = document
-    .getElementById("searchInput")
-    .value.trim()
-    .toLowerCase();
+  var rawQuery = document.getElementById("searchInput").value.trim();
+  var q = rawQuery.toLowerCase();
   // every whitespace-separated token must start a word in data-search,
   // so "dentist vardanants" matches a card holding both, in any order
   var terms = q ? q.split(/\s+/) : [];
@@ -46,10 +108,13 @@ function applyFilters() {
       }
     }
     var show = matchesCat && matchesSearch;
-    var isPersonalHidden = card.className.indexOf("personal-off") !== -1;
+    var isFilteredOff =
+      card.className.indexOf("personal-off") !== -1 ||
+      card.className.indexOf("favorite-off") !== -1 ||
+      card.className.indexOf("visited-off") !== -1;
     if (show) {
       card.className = card.className.replace(/\bhidden\b/g, "");
-      if (!isPersonalHidden) {
+      if (!isFilteredOff) {
         visibleCount++;
       }
     } else {
@@ -63,8 +128,9 @@ function applyFilters() {
   for (var j = 0; j < subgroups.length; j++) {
     var sg = subgroups[j];
     var anyVisible =
-      sg.querySelectorAll(".card:not(.hidden):not(.personal-off)")
-        .length > 0;
+      sg.querySelectorAll(
+        ".card:not(.hidden):not(.personal-off):not(.favorite-off):not(.visited-off)",
+      ).length > 0;
     if (anyVisible) {
       sg.className = sg.className.replace(/\bhidden\b/g, "");
     } else if (sg.className.indexOf("hidden") === -1) {
@@ -76,8 +142,9 @@ function applyFilters() {
   for (var k = 0; k < sections.length; k++) {
     var sec = sections[k];
     var anyVis =
-      sec.querySelectorAll(".card:not(.hidden):not(.personal-off)")
-        .length > 0;
+      sec.querySelectorAll(
+        ".card:not(.hidden):not(.personal-off):not(.favorite-off):not(.visited-off)",
+      ).length > 0;
     if (anyVis) {
       sec.className = sec.className.replace(/\bhidden\b/g, "");
     } else if (sec.className.indexOf("hidden") === -1) {
@@ -90,7 +157,77 @@ function applyFilters() {
     visibleCount + (visibleCount === 1 ? " entry" : " entries");
 
   var emptyEl = document.getElementById("emptyState");
-  emptyEl.style.display = visibleCount === 0 ? "block" : "none";
+  if (visibleCount === 0) {
+    var onFilters = [];
+    var searchInput = document.getElementById("searchInput");
+    if (terms.length) {
+      onFilters.push(
+        makeEmptyFilterEl('search "' + rawQuery + '"', function () {
+          flashControl(searchInput ? searchInput.closest(".search-wrap") : null);
+          if (searchInput) {
+            searchInput.focus();
+            searchInput.select();
+          }
+        }),
+      );
+    }
+    if (activeCat !== "all") {
+      var chips = document.querySelectorAll(".chip");
+      var activeChip = null;
+      for (var c = 0; c < chips.length; c++) {
+        if (chips[c].getAttribute("data-cat") === activeCat) {
+          activeChip = chips[c];
+          break;
+        }
+      }
+      onFilters.push(
+        makeEmptyFilterEl('category "' + activeCat + '"', function () {
+          flashControl(activeChip);
+        }),
+      );
+    }
+    var personalToggle = document.getElementById("personalToggle");
+    if (personalToggle && personalToggle.checked) {
+      onFilters.push(
+        makeEmptyFilterEl("personal contacts hidden", function () {
+          flashControl(personalToggle.closest(".personal-toggle-wrap"));
+        }),
+      );
+    }
+    var favToggle = document.getElementById("favoritesToggle");
+    if (favToggle && favToggle.checked) {
+      onFilters.push(
+        makeEmptyFilterEl("favorites", function () {
+          flashControl(favToggle.closest(".favorites-toggle-wrap"));
+        }),
+      );
+    }
+    var visitedToggle = document.getElementById("visitedToggle");
+    if (visitedToggle && visitedToggle.checked) {
+      onFilters.push(
+        makeEmptyFilterEl("visited", function () {
+          flashControl(visitedToggle.closest(".visited-toggle-wrap"));
+        }),
+      );
+    }
+    emptyEl.textContent = "";
+    if (onFilters.length) {
+      emptyEl.appendChild(document.createTextNode("No entries match with "));
+      for (var f = 0; f < onFilters.length; f++) {
+        if (f > 0) {
+          var sep = f === onFilters.length - 1 ? " and " : ", ";
+          emptyEl.appendChild(document.createTextNode(sep));
+        }
+        emptyEl.appendChild(onFilters[f]);
+      }
+      emptyEl.appendChild(document.createTextNode(" on."));
+    } else {
+      emptyEl.textContent = "No entries match that search. Try a shorter word.";
+    }
+    emptyEl.style.display = "block";
+  } else {
+    emptyEl.style.display = "none";
+  }
 }
 
 applyFilters();
