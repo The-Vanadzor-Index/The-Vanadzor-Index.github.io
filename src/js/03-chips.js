@@ -24,10 +24,13 @@ document
     var chip = e.target.closest ? e.target.closest(".chip") : null;
     if (!chip) {
       var el = e.target;
-      while (el && el.className && el.className.indexOf("chip") === -1) {
+      while (el && el.classList && !el.classList.contains("chip")) {
         el = el.parentElement;
       }
-      chip = el;
+      chip = el && el.classList && el.classList.contains("chip") ? el : null;
+    }
+    if (!chip) {
+      chip = document.querySelector('.chip[data-cat="all"]');
     }
     if (!chip) return;
 
