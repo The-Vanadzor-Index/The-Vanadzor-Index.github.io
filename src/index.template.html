@@ -708,7 +708,7 @@
         width: 100%;
         font-family: var(--mono);
         font-size: 0.9rem;
-        padding: 0.62rem 0.9rem 0.62rem 2.4rem;
+        padding: 0.62rem 2.4rem 0.62rem 2.4rem;
         border: 1px solid var(--line);
         background: var(--paper-card);
         color: var(--ink);
@@ -746,6 +746,51 @@
         pointer-events: none;
         -webkit-mask: var(--icon-search) center / contain no-repeat;
         mask: var(--icon-search) center / contain no-repeat;
+      }
+      /* Hidden by default — script shows it once there's a search term
+         or an active category chip to actually link to, and without JS
+         it never gains .visible at all, so no dangling button appears
+         for a reader who can't use it. The right padding above matches
+         the left, reserved for this rather than only added once the
+         button appears, so text typed to the edge of a long query never
+         shifts under it. */
+      .search-share-btn {
+        position: absolute;
+        top: 50%;
+        right: 0.5rem;
+        transform: translateY(-50%);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 1.7rem;
+        height: 1.7rem;
+        flex-shrink: 0;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--paper-card);
+        color: var(--muted);
+        padding: 0;
+        cursor: pointer;
+        transition:
+          border-color var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease),
+          background var(--t-fast) var(--ease);
+      }
+      .search-share-btn::before {
+        content: "";
+        display: block;
+        width: 13px;
+        height: 13px;
+        background: currentColor;
+        -webkit-mask: var(--icon-link) center / contain no-repeat;
+        mask: var(--icon-link) center / contain no-repeat;
+      }
+      .search-share-btn:hover {
+        border-color: var(--pine);
+        color: var(--ink);
+      }
+      .search-share-btn.visible {
+        display: flex;
       }
       .chip-scroll-wrap {
         position: relative;
@@ -1442,6 +1487,70 @@
         .search-wrap.toggle-flash {
           animation: none;
           box-shadow: 0 0 0 3px var(--pine);
+        }
+      }
+
+      /* Same ring, but on a card landed on from an ?entry= link — it
+         can't reuse .toggle-flash's box-shadow as-is, since a card's
+         resting box-shadow already carries the inset pine edge plus its
+         own elevation and a plain overwrite would blank both for the
+         animation's duration. Each frame restates them alongside the
+         ring instead.
+
+         A breathing ring, not separate pings: the inset edge and
+         elevation stay on rust/elev-2 for the animation's whole
+         duration — only the outer ring's spread and opacity swing,
+         between a thin 3px ring (this class's own resting frame, and
+         reduced-motion's only frame below) and a wide, faint 12px one —
+         so the card never actually leaves the highlighted state until
+         the class comes off at the very end.
+
+         In, out, in, out — four beats, starting wide rather than tight:
+         0% is the "out" value (a card just isn't highlighted yet the
+         instant before this class lands), so the first thing the ring
+         actually does is draw in, then it breathes out/in/out from
+         there. Written as one non-repeating animation with five
+         explicit stops at even fifths (0%/50%/100% share "out", 25%/75%
+         share "in") rather than a looping animation, so it can end open
+         on the wide "out" ring instead of a loop's only two honest
+         places to stop: after a whole lap, or mid-lap on a hard cut.
+
+         Timed with the plain ease-in-out keyword, not var(--ease) — the
+         page's shared curve is built for one-shot reveals (a steep
+         start that settles gently at the end, so a panel or a hover
+         state snaps in and eases out) and has real velocity at each
+         keyframe's 0%, which every one of these five stops is for the
+         segment that follows it. ease-in-out is exactly zero velocity
+         at both ends of every segment, so the ring actually stops for
+         an instant at each extreme before reversing, the way a real
+         oscillation would, rather than stuttering through each turn. */
+      .card.entry-flash {
+        animation: entryCardFlash 2.8s ease-in-out 1;
+      }
+      @keyframes entryCardFlash {
+        0%,
+        50%,
+        100% {
+          box-shadow:
+            inset 3px 0 0 var(--rust),
+            var(--elev-2),
+            0 0 0 12px transparent;
+        }
+        25%,
+        75% {
+          box-shadow:
+            inset 3px 0 0 var(--rust),
+            var(--elev-2),
+            0 0 0 3px var(--rust);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .card.entry-flash {
+          animation: none;
+          box-shadow:
+            inset 3px 0 0 var(--rust),
+            var(--elev-2),
+            0 0 0 3px var(--rust);
         }
       }
 
@@ -3517,6 +3626,12 @@
             placeholder="Search a name, street, or trade…"
             type="text"
           />
+          <button
+            aria-label="Copy a link to this search"
+            class="search-share-btn"
+            id="searchShareBtn"
+            type="button"
+          ></button>
         </div>
         <div class="toggle-row">
           <div class="toggle-row-inner">

@@ -1,5 +1,56 @@
-function scrollToWithBarOffset(el) {
-  if (!el) return;
+// Accelerates into the scroll and decelerates out of it, rather than the
+// browser's own native-smooth-scroll curve — which varies per engine and
+// isn't ours to tune. Driven by hand frame-by-frame instead of a single
+// `scrollTo({behavior:"smooth"})` for two reasons: an easing curve needs
+// per-frame control, and 14-entry-search-deeplinks.js needs to know the
+// exact moment the motion stops (to hold a highlight until the card has
+// actually arrived) rather than inferring it from a `scrollend` listener,
+// which a rapid string of programmatic scrolls doesn't always fire
+// cleanly for.
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function animateScrollTo(targetY, onDone) {
+  var startY = window.pageYOffset || document.documentElement.scrollTop;
+  var distance = targetY - startY;
+  var reduceMotion =
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (Math.abs(distance) < 1 || reduceMotion || !window.requestAnimationFrame) {
+    window.scrollTo(0, targetY);
+    if (onDone) onDone();
+    return;
+  }
+  // Longer jumps take longer, but capped — a jump across the whole page
+  // shouldn't crawl, and a short one shouldn't be instant.
+  var duration = Math.min(800, 250 + Math.abs(distance) * 0.15);
+  var startTime = null;
+
+  function step(now) {
+    if (startTime === null) startTime = now;
+    var t = Math.min(1, (now - startTime) / duration);
+    var y = startY + distance * easeInOutCubic(t);
+    // behavior:"auto" here, not the default — the page sets
+    // `scroll-behavior: smooth` globally in CSS, and without an explicit
+    // override each of these per-frame calls would itself try to glide
+    // smoothly to its target, fighting this function's own easing into a
+    // stutter instead of a curve.
+    window.scrollTo({ top: y, left: window.scrollX, behavior: "auto" });
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else if (onDone) {
+      onDone();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function scrollToWithBarOffset(el, onDone) {
+  if (!el) {
+    if (onDone) onDone();
+    return;
+  }
   var bar = document.querySelector(".controls");
   var barHeight = bar ? bar.getBoundingClientRect().height : 90;
   var rect = el.getBoundingClientRect();
@@ -9,13 +60,7 @@ function scrollToWithBarOffset(el) {
     barHeight -
     20;
   if (targetY < 0) targetY = 0;
-  if (window.scrollTo) {
-    try {
-      window.scrollTo({ top: targetY, behavior: "smooth" });
-    } catch (err) {
-      window.scrollTo(0, targetY);
-    }
-  }
+  animateScrollTo(targetY, onDone);
 }
 
 document

@@ -67,4 +67,18 @@
 
   window.addEventListener("resize", schedule);
   schedule();
+
+  // Exposed for 14-entry-search-deeplinks.js, which scrolls straight to
+  // a single card rather than to a section top the way a chip click
+  // does. A chip click's target is unaffected by packing (a section's
+  // own top only moves with *other* sections' hidden/visible height),
+  // but a card's position inside its grid depends on the packed spans
+  // above — which, on first load, this file has only *scheduled* via
+  // the rAF below, not yet written. Measuring a card's scroll offset
+  // before that first pack runs targets where the card sits in the
+  // unpacked layout, which is a different height than the packed one
+  // it's about to become, so the page settles scrolled to the wrong
+  // spot. Calling this forces the real, current spans synchronously
+  // before anything measures a position to scroll to.
+  window.relayoutMasonry = relayout;
 })();
