@@ -735,7 +735,9 @@
        publish an address the page itself is hiding.
      - the cross-referenced duplicates, which are one place entered
        twice for findability and would otherwise be one dot drawn
-       twice, keyed out here by position and name.
+       twice, keyed out here by position and name — or, when the two
+       copies are worded differently, by the same comment the build
+       counts them out by (isDuplicateCard).
      - the search and category filters, which are not applied: the
        map is a view of the whole index, and quietly hiding most of
        it because of a search box left filled in on the page behind
@@ -744,6 +746,23 @@
      Laid out once per zoom and then moved by a single transform, the
      same way the tiles are: a pan must not cost a hundred and
      seventy style writes a frame. */
+  /* A cross-referenced copy carries a comment above it saying so, which
+     is what build.py subtracts from the entry counts. The position+name
+     key below catches the copies worded identically; this catches the
+     ones filed under a different wording in another category, which are
+     the same place at the same coordinates and must not be two dots. */
+  function isDuplicateCard(card) {
+    var node = card.previousSibling;
+    while (node && node.nodeType === 3 && !node.nodeValue.replace(/\s/g, "")) {
+      node = node.previousSibling;
+    }
+    return !!(
+      node &&
+      node.nodeType === 8 &&
+      node.nodeValue.indexOf("is a duplicate copy") !== -1
+    );
+  }
+
   function collectSpots() {
     if (spots) return spots;
     spots = [];
@@ -752,6 +771,7 @@
     for (var i = 0; i < cards.length; i++) {
       var card = cards[i];
       if (card.getAttribute("data-personal") === "true") continue;
+      if (isDuplicateCard(card)) continue;
       var geo = parseGeo(card);
       if (!geo) continue;
       var name = placeName(card);
