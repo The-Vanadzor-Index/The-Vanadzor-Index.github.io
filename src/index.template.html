@@ -63,6 +63,12 @@
       href="favicon_assets/apple-touch-icon.png"
       data-site-icon
     />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta content="#f4efe2" media="(prefers-color-scheme: light)" name="theme-color" />
+    <meta content="#16180f" media="(prefers-color-scheme: dark)" name="theme-color" />
+    <meta content="yes" name="mobile-web-app-capable" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="Vanadzor" name="apple-mobile-web-app-title" />
     <meta property="og:url" content="https://the-vanadzor-index.github.io/" />
     <meta property="og:type" content="website" />
     <meta
@@ -1646,6 +1652,87 @@
         opacity: 1;
         visibility: visible;
         transform: translate(-50%, 0);
+      }
+
+      /* Mobile "install as an app" banner (13-pwa.js) — surfaced after
+         three minutes on the page or on a second visit, mobile only,
+         never once the page is already running standalone. Built
+         empty in markup; script fills it in only once it decides to
+         show, so there's nothing to lay out until then. Fixed to the
+         bottom like .copy-toast, but doesn't auto-hide — it waits for
+         a tap on one of its own buttons. */
+      .pwa-install-notice {
+        position: fixed;
+        left: 0.8rem;
+        right: 0.8rem;
+        bottom: 0.8rem;
+        z-index: 45;
+        max-width: 30rem;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        background: var(--paper-card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        box-shadow: var(--elev-3);
+        padding: 0.9rem 1rem;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(0.6rem);
+        transition:
+          opacity var(--t-mid) var(--ease),
+          visibility var(--t-mid) var(--ease),
+          transform var(--t-mid) var(--ease);
+      }
+      .pwa-install-notice.visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      .pwa-install-notice-text {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.02em;
+        line-height: 1.55;
+        color: var(--body);
+      }
+      .pwa-install-notice-actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: flex-end;
+      }
+      .pwa-install-notice-actions button {
+        font-family: var(--mono);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border-radius: var(--r-sm);
+        padding: 0.45rem 0.85rem;
+        cursor: pointer;
+        border: 1px solid var(--pine);
+        transition:
+          background var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease);
+      }
+      .pwa-install-notice-install {
+        background: var(--pine);
+        color: var(--paper-card);
+      }
+      .pwa-install-notice-install:hover {
+        background: var(--pine-deep);
+        border-color: var(--pine-deep);
+      }
+      .pwa-install-notice-dismiss {
+        background: transparent;
+        border-color: var(--line);
+        color: var(--muted);
+      }
+      .pwa-install-notice-dismiss:hover {
+        color: var(--body);
       }
 
       /* ---- Map preview -------------------------------------------------
@@ -3764,6 +3851,16 @@
         <circle cx="12" cy="16.4" fill="currentColor" r="0.9" stroke="none" />
       </svg>
     </a>
+    <!-- Mobile install-as-app banner. Built empty and filled in by
+         script only once it decides the moment is right (see
+         13-pwa.js) — nothing to show without JS, same as
+         .hidden-subcats-notice. -->
+    <div
+      aria-live="polite"
+      class="js-only pwa-install-notice"
+      id="pwaInstallNotice"
+      role="status"
+    ></div>
     <script>
       <!-- @@SCRIPT@@ -->
     </script>

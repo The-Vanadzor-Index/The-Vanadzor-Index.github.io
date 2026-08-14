@@ -1,0 +1,24 @@
+{
+  "name": "The Vanadzor Index",
+  "short_name": "Vanadzor",
+  "description": "An offline-friendly local directory for Vanadzor, Armenia — doctors, government services, taxis, repair services, restaurants, hotels, and things to do.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "en",
+  "dir": "ltr",
+  "background_color": "#f4efe2",
+  "theme_color": "#f4efe2",
+  "icons": [
+    {
+      "src": "favicon_assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon_assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

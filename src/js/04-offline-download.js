@@ -148,6 +148,23 @@
         cloneIcons[x].parentNode.removeChild(cloneIcons[x]);
       }
 
+      // The PWA manifest is the same story as the icon links above: a
+      // separate file the downloads folder doesn't have beside it. A
+      // saved copy is never installable as an app anyway (no HTTPS
+      // origin to register a service worker against), so drop the link.
+      var cloneManifest = clone.querySelector('link[rel="manifest"]');
+      if (cloneManifest) {
+        cloneManifest.parentNode.removeChild(cloneManifest);
+      }
+
+      // The install banner has no manifest left to react to (just
+      // removed above) and any DOM it had already built would carry
+      // stale content into the saved copy.
+      var clonePwaNotice = clone.querySelector("#pwaInstallNotice");
+      if (clonePwaNotice) {
+        clonePwaNotice.parentNode.removeChild(clonePwaNotice);
+      }
+
       // Reset the arrow buttons to their initial disabled/enabled state.
       var cloneLeftArrow = clone.querySelector(".chip-arrow-left");
       var cloneRightArrow = clone.querySelector(".chip-arrow-right");
