@@ -308,6 +308,14 @@
         scroll-behavior: smooth;
       }
 
+      /* Phones and tablets (portrait or landscape) read the page at 115%
+         so type and rem-sized chrome scale up together. */
+      @media (max-width: 1024px) {
+        html {
+          font-size: 115%;
+        }
+      }
+
       /* Progressive enhancement: elements that need JS to function are hidden
      until the early head script confirms scripting is available; the
      no-JS notice is the inverse, shown only when that confirmation never
@@ -15072,10 +15080,13 @@
           var chip = e.target.closest ? e.target.closest(".chip") : null;
           if (!chip) {
             var el = e.target;
-            while (el && el.className && el.className.indexOf("chip") === -1) {
+            while (el && el.classList && !el.classList.contains("chip")) {
               el = el.parentElement;
             }
-            chip = el;
+            chip = el && el.classList && el.classList.contains("chip") ? el : null;
+          }
+          if (!chip) {
+            chip = document.querySelector('.chip[data-cat="all"]');
           }
           if (!chip) return;
 
