@@ -20120,6 +20120,28 @@
 
         var atTop = true;
 
+        // Below the wrap point, .toggle-row is no longer sized by its own
+        // content: fitToggleRow (below) gives it an explicit pixel height so
+        // .toggle-row-inner has something stable to scale against. That height
+        // used to stay fixed at the pills' *open* size forever, so folding the
+        // pills away (max-height:0 on each, see .toggle-pill.toggle-folded)
+        // left .toggle-row still standing that tall and the search bar no
+        // shorter for it. applyRowHeight is what keeps the two in sync: it
+        // collapses .toggle-row to 0 right along with the pills and restores
+        // the stored open height when they return, riding the same height
+        // transition .toggle-row already declares in CSS. Below the wrap point
+        // (unscaled), .toggle-row was never given an explicit height at all —
+        // its auto height already tracks the folded pills on its own.
+        function applyRowHeight() {
+          if (!toggleRow) return;
+          if (toggleRow._openHeight == null) {
+            toggleRow.style.height = "";
+            return;
+          }
+          var folded = wraps.length > 0 && wraps[0]._wrapped && !atTop;
+          toggleRow.style.height = folded ? "0px" : toggleRow._openHeight + "px";
+        }
+
         function update() {
           for (var i = 0; i < wraps.length; i++) {
             wraps[i].classList.toggle(
@@ -20127,6 +20149,7 @@
               wraps[i]._wrapped && !atTop,
             );
           }
+          applyRowHeight();
         }
 
         function checkWrapped() {
@@ -20151,25 +20174,56 @@
         // ancestor's would still count, but neither element here has one from
         // outside this function), so this reads the *pre-scale* size even
         // after a previous call has already scaled .toggle-row-inner down.
-        // No reset-then-remeasure step needed.
+        // No reset-then-remeasure step needed for the scale itself — but
+        // .toggle-folded is a real layout change (max-height/padding collapse
+        // to 0, not a transform), so measuring while folded — e.g. a resize
+        // that lands while the reader has scrolled away from the top — would
+        // read the collapsed size as "natural" and store a near-zero
+        // _openHeight. That height then survives the fold: the pills return to
+        // full size on scroll-back, but sit inside a row still pinned to
+        // ~0px tall, so overflow:hidden on .toggle-row clips them on every
+        // side. Same strip-measure-restore as checkWrapped, for the same
+        // reason.
         function fitToggleRow() {
           if (!toggleRow || !toggleRowInner) return;
+          // Unlike checkWrapped's own strip-measure-restore (position only, and
+          // unaffected by the pills' own height), a size read here would
+          // otherwise animate: .toggle-pill's *base* rule carries the same
+          // transition list as .toggle-folded, so simply removing the class
+          // starts a transition back toward full size rather than jumping
+          // there, and offsetHeight is forced mid-transition — read at ~0, one
+          // paint frame in. transition:none is what makes the swap instant
+          // instead of the first frame of an animation.
+          var folded = [];
+          for (var i = 0; i < wraps.length; i++) {
+            if (wraps[i].classList.contains("toggle-folded")) {
+              folded.push(wraps[i]);
+              wraps[i].style.transition = "none";
+              wraps[i].classList.remove("toggle-folded");
+            }
+          }
           var naturalW = toggleRowInner.offsetWidth;
           var availW = toggleRow.clientWidth;
+          var naturalH = toggleRowInner.offsetHeight;
+          for (var j = 0; j < folded.length; j++) {
+            folded[j].classList.add("toggle-folded");
+            folded[j].style.transition = "";
+          }
           if (!naturalW || !availW || naturalW <= availW) {
             toggleRowInner.style.transform = "";
-            toggleRow.style.height = "";
+            toggleRow._openHeight = null;
             toggleRow.classList.remove("toggle-row-scaled");
+            applyRowHeight();
             return;
           }
-          var naturalH = toggleRowInner.offsetHeight;
           var scale = availW / naturalW;
           toggleRowInner.style.transform = "scale(" + scale + ")";
-          toggleRow.style.height = Math.ceil(naturalH * scale) + "px";
+          toggleRow._openHeight = Math.ceil(naturalH * scale);
           // See the CSS comment on .toggle-row-scaled — centering would still
           // centre the pre-transform width and hang half the overflow off the
           // left, past where overflow:hidden can catch it.
           toggleRow.classList.add("toggle-row-scaled");
+          applyRowHeight();
         }
 
         checkWrapped();
