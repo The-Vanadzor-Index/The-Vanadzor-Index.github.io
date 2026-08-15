@@ -136,6 +136,22 @@
       if (cloneCityBtn) {
         cloneCityBtn.parentNode.removeChild(cloneCityBtn);
       }
+      // The plate's zoom does keep working in a snapshot — it asks for
+      // nothing but the drawing already in the file — but the frame the
+      // reader happened to leave it on is session state like any other,
+      // so the saved copy opens on the whole city.
+      var clonePlateSvg = clone.querySelector("#plateSvg");
+      if (clonePlateSvg) {
+        clonePlateSvg.setAttribute("viewBox", "-46 -46 1092 787");
+      }
+      var clonePlateView = clone.querySelector("#plateView");
+      if (clonePlateView) {
+        clonePlateView.classList.remove("is-zoomed", "is-dragging");
+      }
+      var clonePlateFig = clone.querySelector(".map-plate");
+      if (clonePlateFig) {
+        clonePlateFig.style.removeProperty("--mp-zoom");
+      }
       var cloneMapLinks = clone.querySelectorAll("a.map-preview");
       for (var r = 0; r < cloneMapLinks.length; r++) {
         cloneMapLinks[r].className = cloneMapLinks[r].className

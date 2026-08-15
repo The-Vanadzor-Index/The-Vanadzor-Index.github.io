@@ -3326,7 +3326,9 @@
       /* ---- Vanadzor map plate -----------------------------------------
          Real geometry: the municipal boundary and the Pambak / Tandzut /
          Vanadzor confluence, traced from OpenStreetMap data (ODbL) and
-         projected to SVG. District outlines sit at their true coordinates. */
+         projected to SVG. The district zones are traced from a Yandex Maps
+         user map of the city's districts and clipped to that boundary;
+         everything sits at its true coordinates. */
       .map-plate {
         --water: #4a7a9b;
         max-width: 1080px;
@@ -3348,10 +3350,89 @@
       html[data-theme="light"] .map-plate {
         --water: #4a7a9b;
       }
+      /* The plate is ~1090 units of drawing put into a column that is 350px
+         wide on a phone, which is about a third of a millimetre per unit —
+         below the size at which any of it can be read. So the box the drawing
+         sits in scrolls, and the drawing is laid out wider than the box.
+         This rule is the whole feature without JS, and the floor it keeps
+         underneath the JS one: nothing here depends on a script, so a saved
+         snapshot and a browser with JS off both still let a reader get around
+         the map by dragging it. */
+      .plate-view {
+        position: relative;
+        overflow: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
       .map-plate svg {
         display: block;
         width: 100%;
         height: auto;
+      }
+      /* With a script the box stops being a scroller: the same drags and
+         pinches move the SVG's own viewBox, so the plate zooms as a drawing
+         rather than as a picture — hairlines stay hairlines (they are already
+         non-scaling-stroke) and text stays type. `touch-action` is the load-
+         bearing half of it and changes with the zoom: at rest the box gives
+         one-finger vertical panning back to the page, or a reader scrolling
+         down the article would get their finger caught on a full-height map
+         and be stuck. Two fingers are ours at both zooms, because pinch-zoom
+         is absent from both keyword lists and the browser therefore hands the
+         gesture over instead of zooming the page. */
+      html.js .plate-view {
+        overflow: hidden;
+        touch-action: pan-y;
+      }
+      html.js .plate-view.is-zoomed {
+        touch-action: none;
+        cursor: grab;
+      }
+      html.js .plate-view.is-dragging {
+        cursor: grabbing;
+      }
+      /* The controls, sized and set like the plate's other chrome. Bottom
+         right is the one corner of the drawing nothing else claims. */
+      .plate-zoom {
+        position: absolute;
+        right: 0.35rem;
+        bottom: 0.35rem;
+        display: flex;
+        gap: 0.3rem;
+      }
+      .plate-zoom button {
+        min-width: 2rem;
+        height: 2rem;
+        padding: 0 0.5rem;
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        line-height: 1;
+        color: var(--pine-deep);
+        background: var(--paper-card);
+        border: 1px solid var(--line);
+        border-radius: var(--r-sm);
+        box-shadow: var(--elev-1);
+        cursor: pointer;
+        transition:
+          color var(--t-fast) var(--ease),
+          border-color var(--t-fast) var(--ease),
+          background var(--t-fast) var(--ease);
+      }
+      .plate-zoom button:last-child {
+        font-size: 0.62rem;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+      .plate-zoom button:hover {
+        color: var(--rust);
+        border-color: var(--rust);
+        background: var(--tint-rust);
+      }
+      .plate-zoom button[disabled] {
+        opacity: 0.4;
+        cursor: default;
+        color: var(--muted);
+        border-color: var(--line);
+        background: var(--paper-card);
       }
       .map-plate figcaption {
         font-family: var(--mono);
@@ -3447,10 +3528,9 @@
         vector-effect: non-scaling-stroke;
       }
       /* District areas, all drawn the same: dashed rust, so they read as one
-         approximate layer over the solid pine municipal boundary. (The
-         mp-real / mp-approx classes in the markup only record whether the
-         geometry came from an OSM closed way or from our own approximation —
-         they are deliberately not styled apart.)
+         approximate layer over the solid pine municipal boundary — every zone
+         now comes from the same source, so there is nothing left to style
+         apart.
          Geometry is declared once in <defs> and drawn twice: a visible <use>
          in .mp-areas, and a transparent <use> in .mp-labels that carries the
          hover/focus target. That second pass is what lets a revealed name sit
@@ -3461,6 +3541,28 @@
         stroke: var(--rust);
         stroke-width: 1.4;
         stroke-dasharray: 7 5;
+        /* non-scaling-stroke holds the *width* under zoom but not the dash
+           pattern, which is in user units and would stretch to a coarse
+           7-unit-times-the-zoom rhythm. Divide it back. Declared twice on
+           purpose: a browser that cannot do calc() in a dash list drops this
+           line and keeps the plain one above rather than falling to solid. */
+        stroke-dasharray: calc(7 / var(--mp-zoom, 1)) calc(5 / var(--mp-zoom, 1));
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+      }
+      /* The neighbourhoods inside a zone, drawn a step quieter than the zone
+         around them: label grey rather than rust, a finer dash, and barely any
+         fill. A zone should still read as one shape with detail inside it,
+         never as a second layer of districts competing with the first. Their
+         hit shapes come after the zones' in .mp-labels, so pointing at a
+         neighbourhood names the neighbourhood and not its zone. */
+      .mp-sub {
+        fill: var(--ink);
+        fill-opacity: 0.035;
+        stroke: var(--muted);
+        stroke-width: 1;
+        stroke-dasharray: 2 3;
+        stroke-dasharray: calc(2 / var(--mp-zoom, 1)) calc(3 / var(--mp-zoom, 1));
         stroke-linejoin: round;
         vector-effect: non-scaling-stroke;
       }
@@ -3481,10 +3583,16 @@
         transition: opacity 0.12s ease;
       }
       /* The flag scales around its own centre on small screens (see the
-         560px block below); the outer group keeps the anchor position. */
+         560px block below); the outer group keeps the anchor position.
+         --mp-zoom is what the plate's zoom writes, and dividing by it is what
+         stops a label ballooning to the size of the district it names: the
+         flag is chrome over the drawing, not part of it, so it should hold
+         its size on screen while the map grows under it. Both variables carry
+         a default, so with no script and no media query this is scale(1). */
       .mp-flag-in {
         transform-box: fill-box;
         transform-origin: center;
+        transform: scale(calc(var(--mp-flag-base, 1) / var(--mp-zoom, 1)));
       }
       /* :focus covers tap on a touch screen and the keyboard everywhere.
          :hover is added only where a real pointer exists, so a phone never
@@ -3523,14 +3631,21 @@
         text-transform: uppercase;
         fill: var(--muted);
       }
-      /* OSM's own place= classification — the only per-district fact it
-         records beyond the name. Kentron has no OSM entry, so no line. */
+      /* The lines under a zone's name: the other neighbourhoods that share it,
+         or an English gloss where the name is one. A zone that is a single
+         plainly-named neighbourhood gets no second line at all, so the flag is
+         one, two or three lines deep and sized accordingly. */
       .mp-kind {
         font-family: var(--mono);
         font-size: 11px;
         letter-spacing: 0.1em;
         text-transform: uppercase;
         fill: var(--rust);
+      }
+      /* A neighbourhood's flag says what it is in the same grey its outline is
+         drawn in, so the flag carries the same rank as the shape it names. */
+      .mp-flag-sub .mp-kind {
+        fill: var(--muted);
       }
       @media (prefers-reduced-motion: reduce) {
         .mp-flag {
@@ -3542,6 +3657,7 @@
         fill: none;
         stroke: var(--muted);
         stroke-width: 1.6;
+        vector-effect: non-scaling-stroke;
       }
       .mp-scale text,
       .mp-north text {
@@ -3550,6 +3666,17 @@
         font-family: var(--mono);
         font-size: 15px;
         letter-spacing: 0.1em;
+      }
+      /* Under zoom the scale bar's *bar* has to grow with the map — it is a
+         measure of the ground, and 177.3 units are 2km at every magnification
+         — but its caption and the north arrow are chrome and hold their size,
+         each around its own centre so it stays where it was drawn. */
+      .mp-scale text,
+      .mp-north text,
+      .mp-north path {
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: scale(calc(1 / var(--mp-zoom, 1)));
       }
 
       @media (max-width: 560px) {
@@ -3563,9 +3690,20 @@
           padding: 1rem 0.9rem 0.8rem;
         }
         /* At phone width the whole plate is ~350px across, which renders
-           the 15px flag text at about 5px — scale the revealed flag up. */
-        .mp-flag-in {
-          transform: scale(1.85);
+           the 15px flag text at about 5px — scale the revealed flag up.
+           Set as the variable rather than as the transform, so the zoom's
+           own division still applies on top of it. */
+        .map-plate {
+          --mp-flag-base: 1.85;
+        }
+        /* Without a script this is the zoom: the drawing is laid out at 2.4×
+           the box and the reader drags it about. With one, html.js turns the
+           scrolling off above and the same width is the starting frame. */
+        .plate-view > svg {
+          min-width: 240%;
+        }
+        html.js .plate-view > svg {
+          min-width: 0;
         }
       }
 
@@ -3931,23 +4069,65 @@
         reference sources and the author's own head.
       </div>
     <!-- Vanadzor map plate. The municipal boundary and the rivers are real
-         OpenStreetMap geometry. All district outlines are drawn dashed and
-         kept a consistent 4 units inside the municipal border. Districts OSM
-         maps as closed ways use that geometry exactly as mapped (cut back
-         only at the border inset); districts OSM records as a point node get
-         an approximated territory: the built-up footprint (from OSM building
-         positions) is de-spiked, snapped onto the municipal border inset
-         wherever the city reaches it, split between districts by nearest
-         seed — a mapped district seeds from its outline, a node district
-         from its node — and the mapped districts are subtracted with a small
-         clearance. The mp-real/mp-approx classes record that provenance but
-         are styled identically. GSK-2 is left out entirely: its node sits
-         inside the Taron-4 polygon. Kentron has no OSM entry at all; its
-         position is carried over from the plate's original artwork, which is
-         also why it is the one district with no classification line. OSM
-         nests some districts (GSK-3/4/7 inside Taron-2/-3, Meqenashinararneri
-         inside Taron-4); painting largest-first keeps every nested district
-         visible and hoverable on top of its parent.
+         OpenStreetMap geometry. The districts are not: OSM records a scatter
+         of loose points and closed ways that never tile the city and are
+         filed under numbered estate names, so what stood here before was
+         fourteen fragments, most of them a footprint this page had guessed
+         from where OSM happened to put its buildings. The eight zones drawn
+         now come from the "Районы" section of etonawa's Гид по Ванадзору
+         (credited under the plate) — a district map its authors assembled
+         over years of living here, plus a paragraph on each district — which
+         divides the city the way it is actually divided in use, and several
+         of those OSM names turn out to be one zone, which is why a flag can
+         carry four of them under one heading. The plate is the two sources
+         together: the guide says where the districts are and what they are
+         called, OSM supplies the boundary, the rivers and the neighbourhood
+         outlines inside the zones. Neither alone would draw this.
+         The guide's prose is what the names follow, not just its map. It
+         files Nersisyan as a quarter of Dimats rather than a district, so
+         the zone the map labels "Нерсисян, Димац, Агаяна" is named for
+         Dimats and carries Nersisyan below it; and it gives the district the
+         map calls "Противоположный район" its actual name, Третий массив,
+         the Third Massif, keeping "Opposite District" as the nickname it is.
+         Each zone is clipped to the municipal boundary and then pulled back
+         2.5 units of its own, which is where the gap between neighbours comes
+         from: the clip is inset 1.5 so that 1.5 + 2.5 still leaves every zone
+         the same 4 units inside the municipal line it has always had, while
+         two zones that share a border now stand 5 apart. The gap is the only
+         thing separating them — they carry no border of their own beyond
+         their dashes — so it has to be cut in the geometry rather than drawn.
+         Some zones run well past the municipal line on the source map,
+         because they continue into their own settlements — Darpas, and the
+         Gugark/Bazum villages along the highway, are places in their own
+         right — so those keep only the part the city actually reaches, which
+         for Darpas is a sliver in the north-west. Between them the zones
+         cover about 96% of the municipality; what is left over is the empty
+         southern panhandle, which is nobody's neighbourhood. They are painted
+         largest-first, so a smaller zone is never buried under a larger one.
+
+         Inside the zones sit the neighbourhoods, drawn quieter (see .mp-sub).
+         Ten of them are the closed ways OSM does map, kept from this plate's
+         previous artwork — Tavros, Kongo, Taron-1 to -4, Meqenashinararneri
+         and GSK-3/4/7 — every one of which falls inside the single zone the
+         source map calls "Taron, Kongo, Tavros, Meqenashinararneri,
+         Atskhaatner", which is a fair check on both sources at once. The four
+         districts OSM had only a point for are not among them: their
+         territory on the old plate was this page's own guess, and the zones
+         are what replaced it. GSK-2 stays out for the older reason, its node
+         sitting inside Taron-4.
+         The three inside the Khndzorut zone are built rather than traced. Of
+         the five places the source map names there, only three are inside the
+         municipal boundary at all — Gugark and Shahumyan are villages beyond
+         it — so the zone is divided between Bazum, the Bulgarian quarter and
+         Khndzorut proper by nearest seed, seeded from OSM's own place node
+         for Bazum, the Bulgarian-quarter way, and the thirteen "Khndzorut Nth
+         street" ways that lie inside the city. Each cut is held half the gap
+         off its bisector, so the three stand apart by the same margin
+         everything else on the plate does.
+         Every neighbourhood is clipped to its zone less a further 2 units, so
+         it reads as being inside something. Offsets are never chained — each
+         is measured from the zone as clipped — because a second pass over an
+         already-offset ring eats its corners and can leave nothing at all.
          Names reveal on hover (pointer devices), tap or keyboard focus, in
          CSS only — no JS is involved, and each district also carries an SVG
          <title> so the plain browser tooltip and screen readers work
@@ -3955,16 +4135,20 @@
     <figure class="map-plate">
       <figcaption>
         Plate — Vanadzor &amp; its districts
-        <span class="plate-note"
-          >Municipal boundary, with the Pambak, Tandzut &amp; Vanadzor
+        <span class="plate-note">
+          Municipal boundary, with the Pambak, Tandzut &amp; Vanadzor
           rivers meeting near the centre.
-          <span class="hint-hover">Hover a district</span
-          ><span class="hint-tap">Tap a district</span> for its name. District
-          outlines follow OpenStreetMap where it maps them and are
-          approximate elsewhere.</span
-        >
       </figcaption>
+        <!-- The drawing and its zoom live in one box. Without JS that box is
+             simply a scroller with the plate drawn wider than it (see
+             .plate-view), which is the whole feature on a phone: drag to get
+             around a map too detailed to fit a 350px column. With JS the box
+             stops scrolling and the same gestures move the viewBox instead,
+             which keeps every hairline hairline and every label legible at
+             any magnification — a scaled bitmap would do neither. -->
+        <div class="plate-view" id="plateView">
         <svg viewBox="-46 -46 1092 787" xmlns="http://www.w3.org/2000/svg"
+             id="plateSvg"
              role="group" aria-label="Outline map of Vanadzor showing its districts">
           <path d="M0.0 33.7 L61.6 90.2 L83.6 122.3 L94.9 147.9 L112.7 168.1 L132.2 183.7 L131.6 194.3 L147.2 199.2 L154.6 211.4 L147.3 223.5 L147.3 229.4 L156.5 240.7 L143.4 253.8 L141.3 261.5 L144.5 264.8 L155.9 253.7 L167.3 250.1 L222.0 263.9 L224.7 256.3 L234.5 249.7 L248.8 251.5 L248.6 259.4 L260.5 272.3 L261.7 291.6 L258.4 309.0 L270.1 340.2 L279.0 345.4 L312.9 346.1 L332.7 336.1 L337.3 337.6 L343.2 364.9 L335.7 392.4 L358.3 398.9 L356.8 405.0 L362.9 408.9 L384.5 403.6 L391.5 405.8 L417.0 424.2 L416.9 431.6 L410.9 441.5 L412.5 444.9 L458.8 450.3 L463.7 454.1 L471.6 467.3 L467.0 480.0 L486.2 498.8 L489.6 509.8 L492.5 555.9 L490.0 569.3 L484.8 573.1 L483.2 583.8 L486.2 593.1 L481.1 614.5 L467.7 645.7 L421.7 639.3 L420.1 643.9 L446.9 657.2 L451.2 666.0 L447.6 670.6 L452.2 674.6 L473.5 664.6 L496.7 624.5 L505.3 626.1 L512.1 622.6 L528.7 627.8 L537.1 623.6 L539.1 616.6 L527.9 612.0 L518.8 615.6 L507.3 609.3 L518.4 576.8 L517.2 560.2 L526.3 524.3 L579.2 520.8 L627.1 544.3 L624.2 575.2 L639.4 578.2 L645.2 573.9 L655.5 572.8 L694.7 596.2 L702.1 594.8 L738.2 604.5 L773.2 607.4 L780.0 615.2 L768.8 640.4 L748.4 666.7 L742.1 688.5 L745.2 695.2 L755.0 695.0 L756.2 683.8 L770.5 668.1 L774.8 666.1 L783.1 672.5 L782.0 660.4 L791.1 647.1 L800.5 652.0 L807.0 650.6 L812.7 643.0 L825.3 646.1 L855.0 669.7 L861.0 670.4 L871.8 663.2 L887.7 664.8 L891.3 680.2 L897.2 680.7 L903.8 662.9 L914.5 659.1 L949.9 657.6 L972.3 672.3 L977.7 662.1 L999.2 668.5 L1000.0 662.7 L968.1 629.5 L947.3 628.8 L943.5 614.8 L925.7 630.2 L920.0 627.6 L878.0 635.2 L854.4 619.5 L854.1 611.7 L870.8 600.9 L875.2 575.3 L903.1 546.7 L866.7 521.6 L864.5 515.3 L852.3 504.5 L791.0 473.0 L793.1 468.7 L785.5 464.1 L776.6 462.1 L777.4 429.1 L793.1 420.6 L792.4 416.1 L780.4 407.8 L768.1 405.0 L759.8 409.7 L752.2 401.1 L745.9 399.9 L748.2 418.9 L728.7 421.5 L679.2 396.7 L653.8 391.5 L629.4 363.6 L620.0 357.6 L602.8 366.0 L596.4 365.7 L579.9 334.6 L582.6 330.8 L592.6 331.2 L594.1 320.8 L537.4 299.3 L538.0 293.6 L528.8 298.4 L524.8 296.7 L527.2 288.2 L517.0 290.3 L510.4 285.3 L499.3 284.8 L486.6 275.9 L480.3 256.2 L469.1 261.5 L460.6 259.9 L454.3 248.9 L438.1 244.6 L423.3 226.2 L406.0 223.9 L386.7 228.2 L375.5 220.6 L315.0 208.9 L319.3 201.8 L313.5 192.7 L308.6 138.3 L312.0 104.2 L278.4 52.4 L199.3 38.6 L187.1 48.2 L156.4 23.1 L117.1 1.3 L79.8 0.0 L26.6 7.5 L0.0 33.7 Z" class="mp-bound" />
           <path d="M931.6 658.4 L923.3 654.1 L917.0 654.3 L910.7 648.9 L892.4 648.1 L879.4 643.3 L874.0 644.2 L858.5 639.7 L797.1 577.7 L763.2 552.5 L677.6 527.9 L668.2 523.1 L653.1 508.7 L636.9 501.7 L622.0 486.7 L614.9 469.3 L593.1 450.2 L589.5 439.5" class="mp-river" />
@@ -3976,188 +4160,283 @@
           <path d="M488.9 614.2 L502.8 591.2 L507.7 575.2 L515.9 563.5 L519.0 550.2 L518.7 536.1 L524.1 529.0 L526.5 518.7 L530.4 514.9 L539.4 495.7" class="mp-river" />
           <path d="M452.3 674.0 L462.4 665.7 L472.2 663.9 L476.9 640.7 L482.5 637.3 L486.2 629.4 L487.5 616.2" class="mp-river" />
           <defs>
-            <path id="mpd-kentron-g" d="M420.4 422.1 L416.8 441.2 L459.4 446.4 L467.0 451.9 L475.5 466.7 L472.0 479.1 L489.6 496.7 L496.8 529.7 L593.0 439.0 L619.4 364.0 L603.8 369.9 L593.3 368.2 L576.0 335.0 L587.9 322.8 L533.8 300.5 L523.3 300.3 L520.6 293.2 L497.2 288.2 L483.3 278.1 L477.3 264.8 L344.3 375.6 L341.1 389.4 L360.4 395.6 L363.9 404.1 L384.1 399.7 L393.7 402.5 Z" />
-            <path id="mpd-lager-g" d="M494.9 621.0 L516.3 619.8 L503.3 609.6 L514.3 576.6 L513.3 559.5 L523.1 522.0 L579.5 516.9 L630.1 541.7 L629.3 572.0 L638.8 573.8 L656.2 568.9 L695.7 592.0 L748.5 600.0 L739.3 533.0 L593.0 439.2 L495.1 531.6 L496.5 556.1 L493.7 570.7 L488.7 575.4 L490.2 593.4 L485.0 615.5 L468.9 651.1 L475.6 653.0 Z" />
-            <path id="mpd-bazum-g" d="M749.8 599.2 L775.6 604.3 L783.9 615.7 L762.4 655.1 L770.2 661.1 L778.4 663.0 L789.2 643.6 L801.3 647.5 L812.5 639.0 L827.6 642.8 L856.6 665.7 L879.2 660.1 L888.3 650.3 L891.6 637.7 L876.0 638.7 L851.6 622.3 L850.1 611.5 L867.1 598.4 L872.0 573.0 L895.9 546.8 L864.2 524.7 L849.8 507.7 L782.7 470.2 L739.3 532.3 Z" />
-            <path id="mpd-dimats-g" d="M738.0 531.5 L781.6 471.1 L773.5 464.5 L773.6 428.0 L786.7 417.6 L768.7 409.4 L758.4 413.4 L752.2 407.6 L750.8 421.9 L727.9 425.4 L678.1 400.6 L652.1 395.0 L620.3 364.1 L593.8 438.9 Z" />
-            <path id="mpd-tavros-g" d="M130.8 134.0 L124.8 144.8 L140.3 192.8 L149.2 195.7 L151.9 199.3 L163.5 204.3 L181.5 202.7 L187.3 183.0 L200.9 181.3 L234.4 188.8 L267.5 199.4 L269.6 183.5 L286.8 144.5 L279.2 138.9 L272.4 143.0 L224.5 136.2 L219.4 131.4 L213.4 144.4 L208.6 147.2 L196.7 143.8 L197.9 135.0 L184.6 132.0 L184.3 119.6 L188.6 103.9 L190.0 92.2 L171.1 102.8 L168.3 111.1 L154.0 106.3 L157.2 95.1 L173.4 85.8 L178.6 77.2 L183.8 62.2 L182.2 54.0 L178.5 46.3 L160.5 32.0 L100.5 95.2 Z" />
-            <path id="mpd-taron-4-g" d="M209.6 44.5 L206.7 61.7 L202.4 75.3 L201.1 85.7 L191.2 98.3 L187.2 124.4 L188.3 130.4 L191.7 133.4 L198.4 133.7 L209.0 123.5 L219.1 118.1 L241.2 119.8 L245.4 118.9 L295.8 90.9 L276.0 56.0 Z" />
-            <path id="mpd-taron-2-g" d="M113.8 8.9 L64.6 59.6 L64.5 62.2 L98.5 95.7 L159.7 31.0 L154.1 26.4 L118.4 6.6 Z" />
-            <path id="mpd-taron-3-g" d="M18.7 24.6 L34.4 34.9 L60.6 58.9 L64.0 59.1 L113.5 8.3 L113.1 6.0 L80.0 4.0 L28.5 11.3 L21.2 18.4 L22.3 19.6 Z" />
-            <path id="mpd-meqenashinararneri-g" d="M196.9 91.3 L191.3 102.8 L188.7 123.5 L188.9 125.8 L194.6 131.5 L200.5 131.1 L208.3 123.4 L218.8 117.7 L241.3 119.5 L262.8 109.6 L253.6 93.9 L248.9 91.2 L208.2 86.4 Z" />
-            <path id="mpd-kongo-g" d="M278.7 202.4 L280.2 198.5 L302.0 205.5 L304.9 210.7 L376.9 235.5 L378.4 227.4 L373.9 224.4 L312.0 211.5 L311.1 207.9 L314.6 201.9 L308.7 191.3 L306.3 157.5 L305.2 157.1 L299.3 159.2 L294.3 163.4 L289.2 162.3 L274.2 180.2 L271.6 186.8 L269.8 199.7 Z" />
-            <path id="mpd-gsk-4-g" d="M105.5 87.8 L130.8 61.5 L105.2 36.7 L93.9 49.1 L91.5 49.4 L93.7 53.8 L89.2 55.2 L80.8 63.7 Z" />
-            <path id="mpd-gsk-3-g" d="M131.1 60.5 L154.9 35.5 L128.6 12.2 L105.2 35.3 Z" />
-            <path id="mpd-gsk-7-g" d="M80.8 63.7 L89.2 55.2 L93.7 53.8 L91.5 49.4 L93.9 49.1 L105.2 36.7 L87.9 24.6 L63.0 25.4 L56.2 40.9 Z" />
-            <path id="mpd-taron-1-g" d="M154.7 105.8 L167.6 110.5 L169.4 104.3 L158.0 95.4 Z" />
+            <path id="mpd-taron-g" d="M58.3 78.4 L111.6 130.7 L146.5 174.0 L166.5 190.8 L186.4 179.1 L217.6 180.1 L312.5 210.6 L312.1 212.4 L308.6 211.7 L314.2 202.5 L314.4 201.6 L309.6 194.0 L304.6 138.3 L307.9 105.2 L276.0 56.0 L200.4 42.8 L187.1 53.3 L154.1 26.4 L116.0 5.3 L80.0 4.0 L28.5 11.3 L6.1 33.3 Z" />
+            <path id="mpd-khimzavod-g" d="M470.0 452.9 L490.9 409.0 L390.8 359.6 L413.9 308.4 L428.7 307.4 L438.3 303.3 L442.8 297.8 L334.0 271.0 L305.4 259.5 L314.6 217.1 L250.7 197.3 L219.1 188.6 L190.7 186.9 L155.5 205.2 L159.3 211.4 L151.3 224.6 L151.3 228.0 L161.9 241.0 L147.0 255.9 L145.8 260.4 L144.6 259.1 L153.8 250.2 L167.2 245.9 L219.4 259.1 L221.4 253.7 L233.5 245.5 L252.9 248.0 L252.6 257.9 L264.4 270.6 L265.7 291.9 L262.5 308.6 L266.6 319.4 L277.6 324.3 L306.3 342.0 L312.0 342.1 L332.4 331.8 L340.7 334.5 L347.3 365.0 L340.6 389.6 L363.1 396.1 L361.4 403.2 L363.6 404.6 L384.6 399.4 L393.3 402.2 L421.0 422.2 L420.9 432.7 L418.5 436.7 L443.2 444.5 L460.4 446.5 L466.7 451.4 L467.1 452.0 Z" />
+            <path id="mpd-dimats-g" d="M563.4 345.7 L575.1 406.5 L584.4 450.7 L594.4 475.8 L618.2 500.9 L665.2 527.4 L669.9 522.8 L705.6 532.7 L717.6 513.6 L761.7 532.1 L778.5 506.8 L784.8 497.9 L798.2 481.2 L785.7 474.8 L787.9 470.2 L784.0 467.9 L772.5 465.3 L773.5 426.7 L775.7 425.5 L776.2 426.0 L743.8 423.5 L728.0 425.6 L677.9 400.5 L651.7 395.1 L626.8 366.7 L619.7 362.2 L603.6 370.0 L593.9 369.6 L584.3 351.4 Z" />
+            <path id="mpd-kentron-g" d="M546.2 515.7 L583.8 470.3 L574.6 436.9 L573.0 407.6 L558.3 346.1 L440.3 308.5 L428.0 313.6 L417.1 313.2 L396.1 358.3 L499.4 405.4 L473.2 455.5 L509.8 524.2 L523.0 521.1 L523.1 520.5 L526.6 520.3 Z" />
+            <path id="mpd-khndzorut-g" d="M846.8 621.2 L780.2 557.0 L711.3 533.1 L720.1 520.2 L762.4 539.5 L804.2 484.3 L850.0 507.8 L861.1 517.6 L863.4 524.2 L896.9 547.3 L871.5 573.4 L867.2 598.5 L850.0 609.6 L850.5 621.7 L877.1 639.4 L919.5 631.8 L926.4 634.9 L941.3 622.0 L944.2 632.7 L966.3 633.4 L995.8 664.1 L995.9 663.3 L975.7 657.3 L970.8 666.5 L951.0 653.5 L913.7 655.1 L900.7 659.8 L894.5 676.5 L890.9 661.1 L870.8 659.1 L860.0 666.3 L856.6 665.9 L827.1 642.4 L827.4 642.5 Z" />
+            <path id="mpd-yerevan-highway-g" d="M838.9 621.9 L805.7 589.8 L776.8 563.1 L734.8 545.6 L672.8 529.2 L665.1 533.9 L616.3 506.3 L587.9 473.8 L552.5 518.3 L552.8 518.5 L580.0 516.7 L631.3 541.9 L629.5 561.2 L644.4 569.5 L643.7 570.0 L656.4 568.7 L695.4 592.0 L702.3 590.7 L738.9 600.5 L775.1 603.5 L784.7 614.5 L772.3 642.5 L773.3 641.1 L785.6 648.0 L789.8 641.9 L801.1 647.8 L804.7 647.0 L811.1 638.5 L822.1 641.2 Z" />
+            <path id="mpd-third-massif-g" d="M313.4 257.4 L411.2 283.8 L450.6 294.3 L445.4 303.2 L556.8 339.8 L559.3 311.9 L533.1 301.9 L533.2 300.6 L529.0 302.8 L520.0 299.0 L521.6 293.4 L516.0 294.6 L509.0 289.2 L498.0 288.7 L483.2 278.4 L477.9 261.8 L469.6 265.7 L458.0 263.5 L451.7 252.3 L435.8 248.1 L425.1 234.8 L415.5 230.4 L404.9 228.2 L385.9 232.5 L373.9 224.4 L320.8 214.1 Z" />
+            <path id="mpd-darpas-g" d="M110.7 138.2 L161.6 193.2 L152.1 199.6 L149.8 195.8 L135.8 191.4 L136.3 181.9 L115.5 165.2 L98.3 145.7 L87.1 120.3 L70.1 98.5 Z" />
+
+            <path id="mpn-tavros-g" d="M100.5 95.2 L130.8 134.0 L125.1 144.2 L148.0 172.6 L166.7 188.3 L185.9 177.1 L218.0 178.1 L268.2 194.2 L269.6 183.5 L286.8 144.5 L279.2 138.9 L272.4 143.0 L224.5 136.2 L219.4 131.4 L213.4 144.4 L208.6 147.2 L196.7 143.8 L197.9 135.0 L184.6 132.0 L184.3 119.6 L188.6 103.9 L190.0 92.2 L171.1 102.8 L168.3 111.1 L154.0 106.3 L157.2 95.1 L173.4 85.8 L178.6 77.2 L183.8 62.2 L182.2 54.0 L180.6 50.6 L159.3 33.2 Z" />
+            <path id="mpn-kongo-g" d="M271.6 186.8 L274.2 180.2 L289.2 162.3 L294.3 163.4 L299.3 159.2 L304.3 157.4 L307.7 194.7 L312.3 201.9 L312.3 201.7 L311.0 208.0 L270.5 195.0 Z" />
+            <path id="mpn-taron-4-g" d="M295.8 90.9 L245.4 118.9 L241.2 119.8 L219.1 118.1 L209.0 123.5 L198.4 133.7 L191.7 133.4 L188.3 130.4 L187.2 124.4 L191.2 98.3 L201.1 85.7 L202.4 75.3 L206.7 61.7 L209.3 46.4 L274.8 57.9 L292.9 85.7 Z" />
+            <path id="mpn-taron-3-g" d="M113.5 8.3 L64.0 59.1 L60.6 58.9 L34.4 34.9 L18.7 24.6 L20.9 21.5 L29.4 13.2 L80.1 6.0 L113.3 7.2 Z" />
+            <path id="mpn-taron-2-g" d="M98.5 95.7 L64.5 62.2 L64.6 59.6 L113.8 8.9 L116.2 7.7 L153.0 28.1 L158.3 32.4 Z" />
+            <path id="mpn-taron-1-g" d="M158.0 95.4 L169.4 104.3 L167.6 110.5 L154.7 105.8 Z" />
+            <path id="mpn-meqenashinararneri-g" d="M208.2 86.4 L248.9 91.2 L253.6 93.9 L262.8 109.6 L241.3 119.5 L218.8 117.7 L208.3 123.4 L200.5 131.1 L194.6 131.5 L188.9 125.8 L188.7 123.5 L191.3 102.8 L196.9 91.3 Z" />
+            <path id="mpn-gsk-3-g" d="M105.2 35.3 L131.1 60.5 L154.9 35.5 L135.7 18.5 L127.1 13.7 Z" />
+            <path id="mpn-gsk-4-g" d="M80.8 63.7 L89.2 55.2 L93.7 53.8 L91.5 49.4 L93.9 49.1 L105.2 36.7 L130.8 61.5 L105.5 87.8 Z" />
+            <path id="mpn-gsk-7-g" d="M56.2 40.9 L63.0 25.4 L87.9 24.6 L105.2 36.7 L93.9 49.1 L91.5 49.4 L93.7 53.8 L89.2 55.2 L80.8 63.7 Z" />
+            <path id="mpn-bazum-g" d="M821.1 593.6 L781.3 555.3 L714.4 532.1 L720.8 522.7 L763.0 541.9 L804.8 486.8 L848.9 509.5 L856.2 515.9 L823.4 592.4 Z" />
+            <path id="mpn-bolgarski-g" d="M825.8 592.0 L857.7 517.3 L859.4 518.8 L861.7 525.4 L893.8 547.6 L869.6 572.4 L866.8 588.8 Z" />
+            <path id="mpn-khndzorut-proper-g" d="M849.6 621.1 L822.6 595.1 L824.5 594.1 L866.4 590.9 L865.3 597.3 L848.0 608.5 L848.5 622.8 L876.7 641.5 L919.2 633.8 L926.7 637.3 L940.2 625.6 L942.7 634.6 L965.5 635.4 L993.7 664.8 L994.2 660.8 L974.7 654.9 L970.1 663.7 L951.6 651.5 L913.3 653.1 L899.1 658.2 L893.2 674.3 L896.2 674.6 L892.6 659.3 L870.3 657.0 L859.5 664.2 L857.4 663.9 L828.0 640.6 L831.1 641.4 Z" />
           </defs>
           <g class="mp-areas">
-            <use class="mp-area mp-approx" href="#mpd-kentron-g" />
-            <use class="mp-area mp-approx" href="#mpd-lager-g" />
-            <use class="mp-area mp-approx" href="#mpd-bazum-g" />
-            <use class="mp-area mp-approx" href="#mpd-dimats-g" />
-            <use class="mp-area mp-real" href="#mpd-tavros-g" />
-            <use class="mp-area mp-real" href="#mpd-taron-4-g" />
-            <use class="mp-area mp-real" href="#mpd-taron-2-g" />
-            <use class="mp-area mp-real" href="#mpd-taron-3-g" />
-            <use class="mp-area mp-real" href="#mpd-meqenashinararneri-g" />
-            <use class="mp-area mp-real" href="#mpd-kongo-g" />
-            <use class="mp-area mp-real" href="#mpd-gsk-4-g" />
-            <use class="mp-area mp-real" href="#mpd-gsk-3-g" />
-            <use class="mp-area mp-real" href="#mpd-gsk-7-g" />
-            <use class="mp-area mp-real" href="#mpd-taron-1-g" />
+            <use class="mp-area" href="#mpd-taron-g" />
+            <use class="mp-area" href="#mpd-khimzavod-g" />
+            <use class="mp-area" href="#mpd-dimats-g" />
+            <use class="mp-area" href="#mpd-kentron-g" />
+            <use class="mp-area" href="#mpd-khndzorut-g" />
+            <use class="mp-area" href="#mpd-yerevan-highway-g" />
+            <use class="mp-area" href="#mpd-third-massif-g" />
+            <use class="mp-area" href="#mpd-darpas-g" />
+
+            <use class="mp-sub" href="#mpn-tavros-g" />
+            <use class="mp-sub" href="#mpn-kongo-g" />
+            <use class="mp-sub" href="#mpn-taron-4-g" />
+            <use class="mp-sub" href="#mpn-taron-3-g" />
+            <use class="mp-sub" href="#mpn-taron-2-g" />
+            <use class="mp-sub" href="#mpn-taron-1-g" />
+            <use class="mp-sub" href="#mpn-meqenashinararneri-g" />
+            <use class="mp-sub" href="#mpn-gsk-3-g" />
+            <use class="mp-sub" href="#mpn-gsk-4-g" />
+            <use class="mp-sub" href="#mpn-gsk-7-g" />
+            <use class="mp-sub" href="#mpn-bazum-g" />
+            <use class="mp-sub" href="#mpn-bolgarski-g" />
+            <use class="mp-sub" href="#mpn-khndzorut-proper-g" />
           </g>
           <g class="mp-labels">
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Kentron">
-              <title>Kentron</title>
-              <use class="mp-hit" href="#mpd-kentron-g" />
-              <g class="mp-flag" transform="translate(507.5 380.5)">
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Taron, Kongo, Tavros, Meqenashinararneri &amp; Atskhaatner">
+              <title>Taron, Kongo, Tavros, Meqenashinararneri &amp; Atskhaatner</title>
+              <use class="mp-hit" href="#mpd-taron-g" />
+              <g class="mp-flag" transform="translate(219.3 113.6)">
                 <g class="mp-flag-in">
-                  <rect x="-50.9" y="-15" width="101.7" height="30" rx="3" />
-                  <text class="mp-en" x="0" y="5" text-anchor="middle">Kentron</text>
+                  <rect x="-141.6" y="-31.0" width="283.2" height="62.0" rx="3" />
+                  <text class="mp-en" x="0" y="-12.0" text-anchor="middle">Taron</text>
+                  <text class="mp-kind" x="0" y="5.0" text-anchor="middle">Kongo · Tavros</text>
+                  <text class="mp-kind" x="0" y="19.0" text-anchor="middle">Meqenashinararneri · Atskhaatner</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Lager — Neighbourhood">
-              <title>Lager — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-lager-g" />
-              <g class="mp-flag" transform="translate(667.5 532.3)">
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Khimzavod — Chemical Plant">
+              <title>Khimzavod — Chemical Plant</title>
+              <use class="mp-hit" href="#mpd-khimzavod-g" />
+              <g class="mp-flag" transform="translate(309.1 300.4)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Lager</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-68.7" y="-22.0" width="137.4" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Khimzavod</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Chemical Plant</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Bazum — Neighbourhood">
-              <title>Bazum — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-bazum-g" />
-              <g class="mp-flag" transform="translate(810.1 554.7)">
-                <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Bazum</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
-                </g>
-              </g>
-            </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Dimats — Neighbourhood">
-              <title>Dimats — Neighbourhood</title>
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Dimats, with the Nersisyan quarter &amp; Aghayan">
+              <title>Dimats, with the Nersisyan quarter &amp; Aghayan</title>
               <use class="mp-hit" href="#mpd-dimats-g" />
-              <g class="mp-flag" transform="translate(726.3 470.5)">
+              <g class="mp-flag" transform="translate(672.3 463.8)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Dimats</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-121.3" y="-22.0" width="242.7" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Dimats</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Nersisyan Quarter · Aghayan</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Tavros — Neighbourhood">
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Kentron — Centre">
+              <title>Kentron — Centre</title>
+              <use class="mp-hit" href="#mpd-kentron-g" />
+              <g class="mp-flag" transform="translate(529.1 456.0)">
+                <g class="mp-flag-in">
+                  <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Kentron</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Centre</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Khndzorut, Gugark, Bolgarski, Shahumyan &amp; Bazum">
+              <title>Khndzorut, Gugark, Bolgarski, Shahumyan &amp; Bazum</title>
+              <use class="mp-hit" href="#mpd-khndzorut-g" />
+              <g class="mp-flag" transform="translate(825.9 542.8)">
+                <g class="mp-flag-in">
+                  <rect x="-84.9" y="-31.0" width="169.8" height="62.0" rx="3" />
+                  <text class="mp-en" x="0" y="-12.0" text-anchor="middle">Khndzorut</text>
+                  <text class="mp-kind" x="0" y="5.0" text-anchor="middle">Gugark · Bolgarski</text>
+                  <text class="mp-kind" x="0" y="19.0" text-anchor="middle">Shahumyan · Bazum</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Yerevan Highway">
+              <title>Yerevan Highway</title>
+              <use class="mp-hit" href="#mpd-yerevan-highway-g" />
+              <g class="mp-flag" transform="translate(701.2 564.5)">
+                <g class="mp-flag-in">
+                  <rect x="-95.2" y="-15.0" width="190.5" height="30.0" rx="3" />
+                  <text class="mp-en" x="0" y="5.0" text-anchor="middle">Yerevan Highway</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Third Massif — the &ldquo;Opposite District&rdquo;">
+              <title>Third Massif — the &ldquo;Opposite District&rdquo;</title>
+              <use class="mp-hit" href="#mpd-third-massif-g" />
+              <g class="mp-flag" transform="translate(405.6 255.1)">
+                <g class="mp-flag-in">
+                  <rect x="-89.0" y="-22.0" width="177.9" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Third Massif</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">“Opposite District”</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist" tabindex="0" role="img" aria-label="Darpas">
+              <title>Darpas</title>
+              <use class="mp-hit" href="#mpd-darpas-g" />
+              <g class="mp-flag" transform="translate(144.0 185.4)">
+                <g class="mp-flag-in">
+                  <rect x="-45.3" y="-15.0" width="90.6" height="30.0" rx="3" />
+                  <text class="mp-en" x="0" y="5.0" text-anchor="middle">Darpas</text>
+                </g>
+              </g>
+            </g>
+
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Tavros — Neighbourhood">
               <title>Tavros — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-tavros-g" />
-              <g class="mp-flag" transform="translate(164.4 158.7)">
+              <use class="mp-hit" href="#mpn-tavros-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(157.9 140.4)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Tavros</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Tavros</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Taron-4 — Suburb">
-              <title>Taron-4 — Suburb</title>
-              <use class="mp-hit" href="#mpd-taron-4-g" />
-              <g class="mp-flag" transform="translate(236.3 84.3)">
-                <g class="mp-flag-in">
-                  <rect x="-50.9" y="-22" width="101.7" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Taron-4</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Suburb</text>
-                </g>
-              </g>
-            </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Taron-2 — Suburb">
-              <title>Taron-2 — Suburb</title>
-              <use class="mp-hit" href="#mpd-taron-2-g" />
-              <g class="mp-flag" transform="translate(98.6 59.8)">
-                <g class="mp-flag-in">
-                  <rect x="-50.9" y="-22" width="101.7" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Taron-2</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Suburb</text>
-                </g>
-              </g>
-            </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Taron-3 — Suburb">
-              <title>Taron-3 — Suburb</title>
-              <use class="mp-hit" href="#mpd-taron-3-g" />
-              <g class="mp-flag" transform="translate(61.6 29.3)">
-                <g class="mp-flag-in">
-                  <rect x="-50.9" y="-22" width="101.7" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Taron-3</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Suburb</text>
-                </g>
-              </g>
-            </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Meqenashinararneri — Neighbourhood">
-              <title>Meqenashinararneri — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-meqenashinararneri-g" />
-              <g class="mp-flag" transform="translate(209.2 104.1)">
-                <g class="mp-flag-in">
-                  <rect x="-111.9" y="-22" width="223.8" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Meqenashinararneri</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
-                </g>
-              </g>
-            </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Kongo — Neighbourhood">
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Kongo — Neighbourhood">
               <title>Kongo — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-kongo-g" />
-              <g class="mp-flag" transform="translate(291.8 184.9)">
+              <use class="mp-hit" href="#mpn-kongo-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(291.0 184.9)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Kongo</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Kongo</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="GSK-4 — Neighbourhood">
-              <title>GSK-4 — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-gsk-4-g" />
-              <g class="mp-flag" transform="translate(107.8 61.9)">
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-4 — Suburb">
+              <title>Taron-4 — Suburb</title>
+              <use class="mp-hit" href="#mpn-taron-4-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(235.2 85.3)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">GSK-4</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-4</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Suburb</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="GSK-3 — Neighbourhood">
-              <title>GSK-3 — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-gsk-3-g" />
-              <g class="mp-flag" transform="translate(130.6 36.5)">
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-3 — Suburb">
+              <title>Taron-3 — Suburb</title>
+              <use class="mp-hit" href="#mpn-taron-3-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(61.4 30.5)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">GSK-3</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-3</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Suburb</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="GSK-7 — Neighbourhood">
-              <title>GSK-7 — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-gsk-7-g" />
-              <g class="mp-flag" transform="translate(78.6 40.5)">
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-2 — Suburb">
+              <title>Taron-2 — Suburb</title>
+              <use class="mp-hit" href="#mpn-taron-2-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(101.3 56.9)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">GSK-7</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-2</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Suburb</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Taron-1 — Neighbourhood">
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-1 — Neighbourhood">
               <title>Taron-1 — Neighbourhood</title>
-              <use class="mp-hit" href="#mpd-taron-1-g" />
-              <g class="mp-flag" transform="translate(160.4 103.0)">
+              <use class="mp-hit" href="#mpn-taron-1-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(160.2 102.9)">
                 <g class="mp-flag-in">
-                  <rect x="-64.7" y="-22" width="129.3" height="44" rx="3" />
-                  <text class="mp-en" x="0" y="-3" text-anchor="middle">Taron-1</text>
-                  <text class="mp-kind" x="0" y="14" text-anchor="middle">Neighbourhood</text>
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-1</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Meqenashinararneri — Neighbourhood">
+              <title>Meqenashinararneri — Neighbourhood</title>
+              <use class="mp-hit" href="#mpn-meqenashinararneri-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(209.7 103.7)">
+                <g class="mp-flag-in">
+                  <rect x="-111.9" y="-22.0" width="223.8" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Meqenashinararneri</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="GSK-3 — Neighbourhood">
+              <title>GSK-3 — Neighbourhood</title>
+              <use class="mp-hit" href="#mpn-gsk-3-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(129.7 35.7)">
+                <g class="mp-flag-in">
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">GSK-3</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="GSK-4 — Neighbourhood">
+              <title>GSK-4 — Neighbourhood</title>
+              <use class="mp-hit" href="#mpn-gsk-4-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(107.8 61.7)">
+                <g class="mp-flag-in">
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">GSK-4</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="GSK-7 — Neighbourhood">
+              <title>GSK-7 — Neighbourhood</title>
+              <use class="mp-hit" href="#mpn-gsk-7-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(78.7 40.6)">
+                <g class="mp-flag-in">
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">GSK-7</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Bazum — Neighbourhood">
+              <title>Bazum — Neighbourhood</title>
+              <use class="mp-hit" href="#mpn-bazum-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(811.3 534.1)">
+                <g class="mp-flag-in">
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Bazum</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Bolgarski — Bulgarian Quarter">
+              <title>Bolgarski — Bulgarian Quarter</title>
+              <use class="mp-hit" href="#mpn-bolgarski-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(863.8 551.3)">
+                <g class="mp-flag-in">
+                  <rect x="-80.8" y="-22.0" width="161.7" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Bolgarski</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Bulgarian Quarter</text>
+                </g>
+              </g>
+            </g>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Khndzorut — Neighbourhood">
+              <title>Khndzorut — Neighbourhood</title>
+              <use class="mp-hit" href="#mpn-khndzorut-proper-g" />
+              <g class="mp-flag mp-flag-sub" transform="translate(857.9 646.1)">
+                <g class="mp-flag-in">
+                  <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
+                  <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Khndzorut</text>
+                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
@@ -4171,6 +4450,20 @@
             <text x="954.0" y="76" text-anchor="middle">N</text>
           </g>
         </svg>
+        <!-- Reachable by keyboard and by trackpad, which pinch alone is not,
+             and the only thing on the plate that says the zoom is there. Kept
+             out of the drawing's corners: the scale bar has the bottom left
+             and the north arrow the top right. -->
+        <div class="plate-zoom js-only" id="plateZoom">
+          <button type="button" id="plateZoomOut" aria-label="Zoom the plate out">
+            &#8722;</button
+          ><button type="button" id="plateZoomIn" aria-label="Zoom the plate in">
+            +</button
+          ><button type="button" id="plateZoomReset" aria-label="Fit the whole plate again">
+            Fit</button
+          >
+        </div>
+        </div>
         <!-- The plate is a drawing: a boundary, three rivers and the
              district names. This opens the surveyed map of the same city,
              full screen, which is the obvious next question to have about
@@ -4180,13 +4473,18 @@
         <button class="js-only plate-open" id="cityMapBtn" type="button">
           Open the full map of Vanadzor
         </button>
-        <!-- The plate is a drawing traced from OSM geometry, so it is a
-             Produced Work under ODbL §4.4(b) — publishable under this site's
-             own terms, but only against a credit that links the licence.
-             Trace geometry only; extracting OSM coordinates into data would
-             make it a Derivative Database and pull ODbL onto the index. -->
+        <!-- The boundary and rivers are a drawing traced from OSM geometry,
+             so they are a Produced Work under ODbL §4.4(b) — publishable
+             under this site's own terms, but only against a credit that
+             links the licence. Trace geometry only; extracting OSM
+             coordinates into data would make it a Derivative Database and
+             pull ODbL onto the index. The same goes for the neighbourhood
+             outlines inside the zones, which are OSM ways traced the same
+             way. The zones themselves come from elsewhere and are named
+             separately, so that the OSM credit keeps saying exactly what it
+             covers. -->
         <div class="plate-credit">
-          Geometry ©
+          Boundary, rivers and neighbourhood outlines ©
           <a
             href="https://www.openstreetmap.org/copyright"
             rel="noopener"
@@ -4198,7 +4496,20 @@
             rel="noopener"
             target="_blank"
             >ODbL</a
-          >.
+          >. District zones and their names after the
+          <a
+            href="https://etonawa.notion.site/3332f9074e57803491e5f2449cdd8480#3332f9074e5780e885a7cd1197618700"
+            rel="noopener"
+            target="_blank"
+            >Районы</a
+          >
+          section of etonawa's Гид по Ванадзору, licensed
+          <a
+            href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+            rel="noopener"
+            target="_blank"
+            >CC BY-NC-SA 4.0</a
+          >. The plate is drawn from both sources together.
         </div>
       </figure>
     </section>

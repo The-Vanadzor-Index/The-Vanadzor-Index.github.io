@@ -158,8 +158,9 @@ translated form is reserved on the same terms as the English.
 
 ## 4. Third-party material
 
-**OpenStreetMap.** The map panel draws tiles from `tile.openstreetmap.org` and
-the city plate is an SVG traced from OpenStreetMap geometry. Both are
+**OpenStreetMap.** The map panel draws tiles from `tile.openstreetmap.org`, and
+the city plate's municipal boundary and rivers are an SVG traced from
+OpenStreetMap geometry. Both are
 *Produced Works* under section 4.4(b) of the
 [ODbL](https://opendatacommons.org/licenses/odbl/1-0/) — renderings, not
 databases — so they may be published under the terms above provided
@@ -174,6 +175,14 @@ Keep OpenStreetMap on the Produced Work side of that line.
 
 **Nominatim** supplies reverse-geocoded place names at request time, under the
 same ODbL data. Nothing is stored.
+
+**etonawa's Гид по Ванадзору** supplies the city plate's eight district zones
+and their names, from its "Районы" section — the district map its authors
+assembled and the notes beside it. The guide is published under **CC BY-NC-SA
+4.0**, the same terms as this index's own directory content, so it is absorbed
+rather than merely cited; the plate credit names it, links the original and
+identifies the licence, which is what §3(a) asks for. This is the same upstream
+project the directory itself draws on — see section 1.
 
 **Yandex Maps** org URLs come from the upstream databases; the `data-geo`
 coordinates are read from the pages those URLs point at. Individual coordinate
