@@ -488,7 +488,7 @@
       header.masthead {
         position: relative;
         z-index: 1;
-        padding: 4rem 1.5rem 2.4rem;
+        padding: 4rem 1.5rem 1.8rem;
         text-align: center;
         /* The double rule is the one piece of newspaper furniture worth
            keeping, but drawn in ink it was the heaviest line on the page.
@@ -501,8 +501,10 @@
           padding-top: 4.6rem;
         }
       }
-      /* Ararat (Masis & Sis) outline behind the masthead type */
-      .ararat {
+      /* The Bazum and Pambak walls behind the masthead type — the horizon
+         the city actually stands in, rather than a mountain the Pambak
+         range puts out of sight from here. */
+      .ridges {
         position: absolute;
         inset: 0;
         z-index: 0;
@@ -511,10 +513,10 @@
         color: var(--pine);
         opacity: 0.32;
       }
-      .ararat path {
+      .ridges path {
         vector-effect: non-scaling-stroke;
       }
-      .ararat svg {
+      .ridges svg {
         position: absolute;
         bottom: -1px;
         left: 50%;
@@ -525,15 +527,64 @@
         width: max(100%, 840px);
         height: 84%;
       }
+      /* Each of the three groups stretches up from scaleY(0) at the valley
+         floor — the cartoon pop this is standing in for, the same snap a
+         cartoon peak gets popping up past its rest height and settling,
+         which is what the overshoot in the easing is for. 600px 300px is
+         the floor at the viewBox's own horizontal centre: a plain-number
+         transform-origin on an SVG shape addresses the viewBox's user
+         units directly, so all three share one anchor regardless of each
+         one's own bounding box. Wrapper's own overflow:hidden clips the
+         overshoot at the header's top edge, already where the drawing
+         ends. Back wall first and quickest (it is furthest and smallest),
+         front wall close behind at an average pace, pines last and
+         slowest — rising out of the ground the walls have already
+         planted. */
+      .ridges .ridge-back,
+      .ridges .ridge-front,
+      .ridges .ridge-trees {
+        transform-origin: 600px 300px;
+        animation-name: ridgesRise;
+        animation-timing-function: cubic-bezier(0.3, 1.6, 0.6, 1);
+        animation-fill-mode: both;
+      }
+      .ridges .ridge-back {
+        animation-duration: 0.6s;
+        animation-delay: 0.5s;
+      }
+      .ridges .ridge-front {
+        animation-duration: 0.9s;
+        animation-delay: 0.65s;
+        animation-timing-function: cubic-bezier(0.3, 1.35, 0.7, 1);
+      }
+      .ridges .ridge-trees {
+        animation-duration: 0.9s;
+        animation-delay: 0.85s;
+      }
+      @keyframes ridgesRise {
+        from {
+          transform: scaleY(0);
+        }
+        to {
+          transform: scaleY(1);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ridges .ridge-back,
+        .ridges .ridge-front,
+        .ridges .ridge-trees {
+          animation: none;
+        }
+      }
       @media (prefers-color-scheme: dark) {
-        .ararat {
+        .ridges {
           opacity: 0.44;
         }
       }
-      html[data-theme="dark"] .ararat {
+      html[data-theme="dark"] .ridges {
         opacity: 0.44;
       }
-      html[data-theme="light"] .ararat {
+      html[data-theme="light"] .ridges {
         opacity: 0.32;
       }
       header.masthead .eyebrow,
@@ -1525,7 +1576,7 @@
          an instant at each extreme before reversing, the way a real
          oscillation would, rather than stuttering through each turn. */
       .card.entry-flash {
-        animation: entryCardFlash 2.8s ease-in-out 1;
+        animation: entryCardFlash 5.6s ease-in-out 1;
       }
       @keyframes entryCardFlash {
         0%,
@@ -3533,7 +3584,7 @@
   <body>
     <div class="grain"></div>
     <header class="masthead" id="top">
-      <div aria-hidden="true" class="ararat">
+      <div aria-hidden="true" class="ridges">
         <svg
           fill="none"
           preserveAspectRatio="none"
@@ -3544,22 +3595,64 @@
           xmlns="http://www.w3.org/2000/svg"
         >
           <!--
-            One continuous contour, drawn as the massif is seen from northern
-            Armenia: Sis on the left, the saddle, then Masis on the right.
+            Two contours, drawn as the valley is seen from inside it: the
+            Bazum wall standing back and held lighter, the Pambak wall
+            nearer and inked heavier, and between them the floor the city
+            is laid out on.
+
+            The summits are all deliberately outside x 294-901, y 20-195 —
+            the block the masthead type stands in at desktop widths. Both
+            ridges run low and quiet across that band, so the drawing
+            frames the title from either side instead of being dragged
+            through it. A summit moved into that box is the one edit that
+            makes this unreadable; check a wide screenshot after any.
+
+            That band is also, unhelpfully, the only part a phone sees: the
+            svg's min-width centre-crops, so a ~430px viewport shows about
+            x 293-907 and nothing else. A narrow screen therefore gets the
+            quiet stretch — floor, pines, and the feet of both walls at the
+            edges — and that is accepted rather than worked around. Check a
+            ~390px screenshot as well as a wide one after any edit here;
+            the two crops show almost disjoint halves of the drawing, so
+            either one alone will tell you it is fine when it is not.
+
+            The near ridge also stays entirely below the far one at every
+            x, so two unfilled paths still read as depth and never tangle
+            into a lattice. Keep it that way rather than reaching for a
+            paper-coloured fill to occlude, which would stamp out the
+            grain showing through.
           -->
+          <!-- Bazum, the north wall, set back -->
           <path
-            d="M-24 292 C120 289, 222 285, 236 268 L366 104 C375 93, 384 117, 392 128 L448 206 C457 219, 565 198, 588 178 L742 42 C757 29, 770 46, 782 62 L872 182 C896 214, 1040 286, 1224 292"
-            stroke-width="1.3"
+            class="ridge-back"
+            d="M-24 118 L48 60 C54 54, 62 59, 67 67 L112 130 C118 139, 128 138, 136 130 L172 66 C178 60, 186 65, 191 73 L286 168 C300 182, 318 200, 336 204 C400 214, 500 216, 560 216 C650 220, 720 220, 800 210 C850 205, 884 196, 908 174 L962 92 C968 86, 976 91, 981 99 L1018 144 C1024 153, 1034 152, 1042 144 L1080 58 C1086 52, 1094 57, 1099 65 L1140 116 C1146 125, 1156 124, 1163 116 L1184 84 C1190 78, 1198 83, 1202 91 L1224 116"
+            opacity="0.6"
+            stroke-width="0.95"
           />
-          <!-- snow, held to a few hairlines -->
-          <g opacity="0.55" stroke-width="1">
+          <!-- Pambak, the south wall, nearer -->
+          <path
+            class="ridge-front"
+            d="M-24 262 L24 214 L78 152 C82 146, 87 148, 91 157 L142 224 C148 233, 158 232, 166 224 L196 190 C202 185, 209 190, 213 198 L258 248 C282 278, 320 288, 356 290 C470 296, 640 297, 760 292 C812 290, 856 282, 890 262 L936 214 L982 160 C988 153, 998 158, 1004 167 L1046 228 C1052 237, 1062 236, 1070 228 L1094 196 C1100 191, 1107 196, 1111 204 L1160 262 L1224 292"
+            stroke-width="1.35"
+          />
+          <!--
+            Pines, held to the valley floor and the lower slopes, which is
+            where they are — the ridges above the treeline stay bare. Three
+            clumps with gaps and two stragglers between them, every tooth a
+            different height: an unbroken even comb reads as a saw blade.
+          -->
+          <g class="ridge-trees" opacity="0.55" stroke-width="1">
             <path
-              d="M668 112 C686 124, 702 108, 720 118 C738 128, 754 112, 772 120 C790 128, 806 126, 822 120"
+              d="M300 280 l7 -13 l7 13 l10 3 l6 -11 l6 11 l9 3 l8 -15 l8 15 l8 3 l6 -10 l6 10 l9 2 l7 -12 l7 12"
             />
-            <path d="M772 136 C792 148, 812 152, 832 146" />
+            <path d="M412 293 l9 -18 l9 18" />
             <path
-              d="M340 142 C352 152, 364 146, 376 152 C386 157, 394 150, 404 154"
+              d="M440 294 l8 -13 l8 13 l11 0 l7 -11 l7 11 l10 1 l9 -16 l9 16 l8 0 l6 -10 l6 10 l11 1 l8 -12 l8 12 l9 0 l7 -10 l7 10"
             />
+            <path
+              d="M605 296 l7 -11 l7 11 l10 0 l8 -15 l8 15 l9 0 l6 -10 l6 10 l10 -1 l7 -12 l7 12 l9 0 l6 -9 l6 9"
+            />
+            <path d="M730 293 l8 -16 l8 16" />
           </g>
         </svg>
       </div>
@@ -3770,11 +3863,12 @@
               href="https://en.wikipedia.org/wiki/Pambak_(river)"
               rel="noopener"
               target="_blank"
-              >Pambak</a
-            >, hemmed in on either side by the Bazum and Pambak ranges, both
-            of which rise above 2,500 m. That valley floor is why the city is
+              >Pambak River</a
+            >, hemmed in on either side by the Bazum and Pambak mountain
+            ranges, both of which rise above 2,500 m. That valley floor is why the city is
             long and narrow rather than round, and why its districts are
-            strung out along the water.
+            strung out along the water. Those two walls are the ridgelines
+            drawn as outlines behind the title at the top of this page.
           </p>
           <p>
             It was known for centuries as Gharakilisa, was renamed Kirovakan
