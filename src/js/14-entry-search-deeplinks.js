@@ -89,7 +89,8 @@
   var tooltipTimer = null;
 
   function baseTooltipText(btn) {
-    return btn === searchShareBtn ? "Copy search link" : "Copy link";
+    if (btn !== searchShareBtn) return "Copy link";
+    return isCategoryOnlyShare() ? "Copy category link" : "Copy search link";
   }
 
   function hideTooltip() {
@@ -196,6 +197,15 @@
   var searchInputEl = document.getElementById("searchInput");
   var searchShareBtn = document.getElementById("searchShareBtn");
 
+  // True only when a category chip is active with no search text — the
+  // link then points at a plain category filter, not a search, so the
+  // button's wording should say so rather than default to "search".
+  function isCategoryOnlyShare() {
+    var hasQuery = !!(searchInputEl && searchInputEl.value.trim());
+    var hasCat = typeof activeCat !== "undefined" && activeCat !== "all";
+    return hasCat && !hasQuery;
+  }
+
   function updateSearchShareVisibility() {
     if (!searchShareBtn) return;
     var hasQuery = !!(searchInputEl && searchInputEl.value.trim());
@@ -205,7 +215,10 @@
 
   if (searchShareBtn) {
     searchShareBtn.addEventListener("click", function () {
-      copyLink(searchShareBtn, searchUrl(), "Search link copied");
+      var successMsg = isCategoryOnlyShare()
+        ? "Category link copied"
+        : "Search link copied";
+      copyLink(searchShareBtn, searchUrl(), successMsg);
     });
   }
 
