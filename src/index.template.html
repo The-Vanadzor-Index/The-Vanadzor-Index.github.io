@@ -1422,6 +1422,12 @@
         opacity: 0.6;
         letter-spacing: 0.1em;
       }
+      /* The label wraps rather than running past its own frame. It said
+         nowrap while the page was English-only, where it fits a 320px
+         screen; a longer label -- a translation, or a reworded one --
+         overflowed the button instead of using a second line.
+         text-wrap:balance splits those two lines evenly where it is
+         understood and is ignored where it is not. */
       .download-btn {
         display: flex;
         align-items: center;
@@ -1429,7 +1435,8 @@
         width: fit-content;
         max-width: 100%;
         box-sizing: border-box;
-        white-space: nowrap;
+        text-align: center;
+        text-wrap: balance;
         font-family: var(--mono);
         font-size: clamp(0.55rem, 2.6vw, 0.72rem);
         font-weight: 600;
