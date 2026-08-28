@@ -59,6 +59,31 @@ def card_count(markup):
     return len(CARD_RE.findall(markup)) - markup.count(DUPLICATE_MARK)
 
 
+def mark_duplicates(markup):
+    """Stamp data-duplicate="true" on every cross-referenced copy.
+
+    Which cards are duplicates is already stated in a comment above each
+    one, and the counts here read it -- but a comment is not something the
+    page itself can act on, so the result counter in the controls bar
+    counted the copies and reported two more entries than the masthead
+    said were on file. This carries the same fact into the DOM.
+
+    Written into the built page only, never back into src/cards/, and it
+    leaves the class attribute alone so CARD_RE and the counts are
+    unaffected.
+    """
+    out, pos = [], 0
+    for mark in re.finditer(re.escape(DUPLICATE_MARK), markup):
+        card = CARD_RE.search(markup, mark.end())
+        if card is None:
+            raise BuildError(f"a {DUPLICATE_MARK!r} comment has no card after it")
+        out.append(markup[pos : card.end()])
+        out.append(' data-duplicate="true"')
+        pos = card.end()
+    out.append(markup[pos:])
+    return "".join(out)
+
+
 def read_script():
     """The JS modules, in filename order, re-indented to sit inside <script>.
 
@@ -211,7 +236,7 @@ def build(write=True):
     restamped = stamp_counts(sections, write)
     total = sum(s["count"] for s in sections)
 
-    body = "".join(s["markup"] for s in sections)
+    body = mark_duplicates("".join(s["markup"] for s in sections))
     document = (
         apply_total(template, total)
         .replace(CARDS_SLOT, body)

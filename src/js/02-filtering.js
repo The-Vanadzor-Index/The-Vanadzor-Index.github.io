@@ -108,13 +108,20 @@ function applyFilters() {
       }
     }
     var show = matchesCat && matchesSearch;
+    // A cross-referenced copy is one entry filed under a second
+    // subcategory, not a second entry. The masthead total has always
+    // excluded them, so this counter has to as well, or an unfiltered
+    // page reports two more entries than it says it holds. The copy is
+    // still shown -- being findable in both places is the whole point of
+    // it -- it just isn't counted twice. build.py stamps the attribute.
+    var isDuplicate = card.getAttribute("data-duplicate") === "true";
     var isFilteredOff =
       card.className.indexOf("personal-off") !== -1 ||
       card.className.indexOf("favorite-off") !== -1 ||
       card.className.indexOf("visited-off") !== -1;
     if (show) {
       card.className = card.className.replace(/\bhidden\b/g, "");
-      if (!isFilteredOff) {
+      if (!isFilteredOff && !isDuplicate) {
         visibleCount++;
       }
     } else {
