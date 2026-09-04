@@ -170,6 +170,9 @@
   var askBox = null;
   var goLink = null;
   var cancelBtn = null;
+  var cTitle = null;
+  var cText = null;
+  var osmLink = null;
   var lastFocus = null;
   var waitTimer = null;
 
@@ -639,11 +642,14 @@
   function showSelection() {
     var on = current();
     if (entry) {
-      entryPin.setAttribute("aria-label", "Show " + entry.name);
+      entryPin.setAttribute(
+        "aria-label",
+        t("Show {name}").replace("{name}", entry.name),
+      );
     }
     pickPin.setAttribute(
       "aria-label",
-      pick ? "Show the picked point" : "Picked point",
+      t(pick ? "Show the picked point" : "Picked point"),
     );
     if (!on) {
       closeConfirm();
@@ -653,7 +659,7 @@
       // card standing over it. This is what is left for a reader who
       // is being read to: the same line, spoken.
       sayEl.textContent = on.pending
-        ? "Looking up this place…"
+        ? t("Looking up this place…")
         : on.name || coordText(on.lat, on.lon);
     }
     entryPin.className =
@@ -1098,7 +1104,7 @@
         el.style.left = g.x + "px";
         el.style.top = g.y + "px";
         el.title =
-          n + (n === 1 ? " entry here" : " entries here — tap to open");
+          tn(n === 1 ? "{n} entry here" : "{n} entries here — tap to open", n);
         // What to zoom to when it is tapped, kept on the element so
         // the tap doesn't have to work out which group it was.
         el.__at = g;
@@ -1163,6 +1169,10 @@
       popScroll.removeChild(popScroll.firstChild);
     }
     var clone = spot.card.cloneNode(true);
+    // Before anything is taken out of it: the copy has to inherit what the
+    // original remembers of its own English, or this card could never be
+    // switched back to it (see i18nAdoptClone).
+    i18nAdoptClone(spot.card, clone);
     clone.className = "card";
     clone.removeAttribute("style");
     var links = clone.querySelectorAll(".card-row a");
@@ -1183,7 +1193,7 @@
     // The strip takes the marker's own mark and its category's name.
     // A category the icon table doesn't know draws a plain disc on the
     // map, and gets a plain disc here for the same reason.
-    popStrip(spotIcon(spot.card), spot.cat || "", "entry");
+    popStrip(spotIcon(spot.card), tcat(spot.cat || ""), "entry");
     popShow();
   }
   /* ---- The same card, over a point the reader picked ----------------
@@ -1223,7 +1233,7 @@
       name.appendChild(bar);
       var say = document.createElement("span");
       say.className = "mapview-vh";
-      say.textContent = "Looking up this place…";
+      say.textContent = t("Looking up this place…");
       name.appendChild(say);
       sub.textContent = coords;
     } else {
@@ -1234,7 +1244,7 @@
     if (sub.textContent) popScroll.appendChild(sub);
     // A point has no listing behind it, only a place on the map.
     popYa.href = yandexPoint(at.lat, at.lon);
-    popStrip(null, "Picked point", "point");
+    popStrip(null, t("Picked point"), "point");
     // Naming it changes its height, so the card has to be measured and
     // stood again — but only once it is actually up.
     if (popupEl.style.display !== "none") popShow();
@@ -1671,7 +1681,7 @@
   function locate() {
     if (!navigator.geolocation) return;
     locateBtn.disabled = true;
-    flash("Finding your location…");
+    flash(t("Finding your location…"));
     navigator.geolocation.getCurrentPosition(
       function (pos) {
         locateBtn.disabled = false;
@@ -1717,7 +1727,7 @@
             ? "Location permission was declined"
             : err && err.code === 3
               ? "Locating took too long"
-              : "Your location isn't available",
+              : t("Your location isn't available"),
         );
       },
       GEO_OPTS,
@@ -2186,7 +2196,7 @@
     panelEl.setAttribute("aria-modal", "true");
     // Nothing left to name it after: what is picked is described by a
     // card standing on the map, not by a title in the panel's chrome.
-    panelEl.setAttribute("aria-label", "Map preview");
+    panelEl.setAttribute("aria-label", t("Map preview"));
 
     // What the plate in the corner used to be, for a reader who is
     // being read to rather than looking: the name of whatever is
@@ -2204,7 +2214,7 @@
     closeBtn = document.createElement("button");
     closeBtn.className = "mapview-close";
     closeBtn.type = "button";
-    closeBtn.setAttribute("aria-label", "Close map preview");
+    closeBtn.setAttribute("aria-label", t("Close map preview"));
     closeBtn.appendChild(icon(ICON_CLOSE));
 
     var body = document.createElement("div");
@@ -2215,8 +2225,10 @@
     mapEl.setAttribute("role", "group");
     mapEl.setAttribute(
       "aria-label",
-      "Map. Arrow keys pan, plus and minus zoom, Enter picks the point " +
-        "at the centre.",
+      t(
+        "Map. Arrow keys pan, plus and minus zoom, Enter picks the point " +
+          "at the centre.",
+      ),
     );
     wrapEl = document.createElement("div");
     wrapEl.className = "mapview-wrap";
@@ -2252,11 +2264,11 @@
     zoomInBtn = document.createElement("button");
     zoomInBtn.type = "button";
     zoomInBtn.appendChild(icon(ICON_IN));
-    zoomInBtn.setAttribute("aria-label", "Zoom in");
+    zoomInBtn.setAttribute("aria-label", t("Zoom in"));
     zoomOutBtn = document.createElement("button");
     zoomOutBtn.type = "button";
     zoomOutBtn.appendChild(icon(ICON_OUT));
-    zoomOutBtn.setAttribute("aria-label", "Zoom out");
+    zoomOutBtn.setAttribute("aria-label", t("Zoom out"));
     // Only offered where the browser can answer it at all. Over
     // file:// — which is what a saved snapshot would be, if the panel
     // ran there — the API is missing outright rather than refusing,
@@ -2266,8 +2278,8 @@
       locateBtn.type = "button";
       locateBtn.className = "mapview-locate is-apart";
       locateBtn.appendChild(icon(ICON_LOCATE));
-      locateBtn.setAttribute("aria-label", "Show my location");
-      locateBtn.title = "Show my location";
+      locateBtn.setAttribute("aria-label", t("Show my location"));
+      locateBtn.title = t("Show my location");
     }
     // Sits with the map's own controls rather than with the two ways
     // out, because it acts on the map — and it is only there when
@@ -2277,8 +2289,8 @@
     clearBtn.className =
       "mapview-clear is-off" + (locateBtn ? "" : " is-apart");
     clearBtn.appendChild(icon(ICON_CLEAR));
-    clearBtn.setAttribute("aria-label", "Clear the picked point");
-    clearBtn.title = "Clear the picked point";
+    clearBtn.setAttribute("aria-label", t("Clear the picked point"));
+    clearBtn.title = t("Clear the picked point");
     // Appended so the column reads, top to bottom: clear, locate, then
     // the two zoom steps nearest the corner. The two that come and go
     // are the two at the top, and the column is anchored by its foot —
@@ -2325,7 +2337,7 @@
     popClose = document.createElement("button");
     popClose.type = "button";
     popClose.className = "mapview-pop-close";
-    popClose.setAttribute("aria-label", "Close this card");
+    popClose.setAttribute("aria-label", t("Close this card"));
     popClose.appendChild(icon(ICON_CLOSE));
     popHead.appendChild(popClose);
     // Built once and put under each filling rather than rebuilt with
@@ -2339,13 +2351,13 @@
     popYa.className = "mapview-out mapview-out-primary";
     popYa.rel = "noopener";
     if (!IS_ANDROID && !IS_IOS) popYa.target = "_blank";
-    popYa.textContent = "Open in Yandex Maps ↗";
+    popYa.textContent = t("Open in Yandex Maps ↗");
     popOut = document.createElement("button");
     popOut.className = "mapview-out";
     popOut.type = "button";
     popOut.setAttribute("aria-haspopup", "dialog");
     popOut.setAttribute("aria-expanded", "false");
-    popOut.textContent = "Open in different maps";
+    popOut.textContent = t("Open in different maps");
     popActions.appendChild(popYa);
     popActions.appendChild(popOut);
     // The two ways out are a footer of the card now rather than the
@@ -2377,7 +2389,7 @@
 
     note = document.createElement("div");
     note.className = "mapview-note";
-    note.textContent = LOADING;
+    note.textContent = t(LOADING);
     // The note goes in after the map so it covers it: an empty tile
     // grid reads as a map that arrived blank.
     body.appendChild(mapEl);
@@ -2395,26 +2407,27 @@
     box.setAttribute("aria-modal", "true");
     box.setAttribute("aria-labelledby", "mapviewConfirmTitle");
     box.setAttribute("aria-describedby", "mapviewConfirmText");
-    var cTitle = document.createElement("div");
+    cTitle = document.createElement("div");
     cTitle.className = "mapview-confirm-title";
     cTitle.id = "mapviewConfirmTitle";
-    cTitle.textContent = "Use a different map?";
-    var cText = document.createElement("div");
+    cTitle.textContent = t("Use a different map?");
+    cText = document.createElement("div");
     cText.className = "mapview-confirm-text";
     cText.id = "mapviewConfirmText";
-    cText.textContent =
+    cText.textContent = t(
       "The map above is enough to show where something is, but Yandex " +
-      "Maps is the best-surveyed one for Vanadzor and for Armenia " +
-      "generally, and the one this index was checked against — other " +
-      "maps often have the place under an old name, in the wrong " +
-      "spot, or not at all. Continuing opens a plain point at these " +
-      "coordinates, with no listing behind it.";
+        "Maps is the best-surveyed one for Vanadzor and for Armenia " +
+        "generally, and the one this index was checked against — other " +
+        "maps often have the place under an old name, in the wrong " +
+        "spot, or not at all. Continuing opens a plain point at these " +
+        "coordinates, with no listing behind it.",
+    );
     var cRow = document.createElement("div");
     cRow.className = "mapview-confirm-row";
     cancelBtn = document.createElement("button");
     cancelBtn.className = "mapview-out";
     cancelBtn.type = "button";
-    cancelBtn.textContent = "Cancel";
+    cancelBtn.textContent = t("Cancel");
     // The real destination sits on an anchor rather than behind a
     // scripted navigation: a link is what hands a geo: or a
     // maps.apple.com address to an app cleanly, and it is what a
@@ -2423,7 +2436,7 @@
     goLink.className = "mapview-out mapview-out-primary";
     goLink.rel = "noopener";
     if (!IS_ANDROID && !IS_IOS) goLink.target = "_blank";
-    goLink.textContent = "Continue ↗";
+    goLink.textContent = t("Continue ↗");
     cRow.appendChild(cancelBtn);
     cRow.appendChild(goLink);
     box.appendChild(cTitle);
@@ -2446,11 +2459,11 @@
     // for, verbatim, and the geocoder named; only the prose framing
     // went. It fits on one line down to a 320px screen.
     creditEl.appendChild(document.createTextNode("© "));
-    var osmLink = document.createElement("a");
+    osmLink = document.createElement("a");
     osmLink.href = "https://www.openstreetmap.org/copyright";
     osmLink.rel = "noopener";
     osmLink.target = "_blank";
-    osmLink.textContent = "OpenStreetMap contributors";
+    osmLink.textContent = t("OpenStreetMap contributors");
     creditEl.appendChild(osmLink);
     creditEl.appendChild(document.createTextNode(" · Nominatim"));
 
@@ -2768,7 +2781,7 @@
     hintDefault();
     closeConfirm();
     note.style.display = "";
-    note.textContent = LOADING;
+    note.textContent = t(LOADING);
 
     // Hand back exactly the width the scrollbar gives up, so the page
     // behind the scrim doesn't jump wider as it locks.
@@ -2811,7 +2824,7 @@
     waitTimer = setTimeout(function () {
       // The second half of that sentence points at a link that is
       // only there when something is picked out.
-      note.textContent = sel ? FAILED : FAILED_BARE;
+      note.textContent = t(sel ? FAILED : FAILED_BARE);
     }, 8000);
     // Focusable on this tick, not after the fade — see the transition
     // on .mapview in the stylesheet.
@@ -2957,4 +2970,59 @@
     }
     close();
   });
+
+  // A language switch re-letters the panel in place. Rebuilding it instead
+  // would throw away the tile layers -- which is the one thing 09-map.js goes
+  // out of its way to keep (see trimLayers) -- so the static labels are simply
+  // written again, and anything drawn from a selection is redrawn by the
+  // functions that own it.
+  document.addEventListener("vanadzor:langchange", function () {
+    if (!panelEl) return;
+    panelEl.setAttribute("aria-label", t("Map preview"));
+    closeBtn.setAttribute("aria-label", t("Close map preview"));
+    mapEl.setAttribute(
+      "aria-label",
+      t(
+        "Map. Arrow keys pan, plus and minus zoom, Enter picks the point " +
+          "at the centre.",
+      ),
+    );
+    zoomInBtn.setAttribute("aria-label", t("Zoom in"));
+    zoomOutBtn.setAttribute("aria-label", t("Zoom out"));
+    if (locateBtn) {
+      locateBtn.setAttribute("aria-label", t("Show my location"));
+      locateBtn.title = t("Show my location");
+    }
+    clearBtn.setAttribute("aria-label", t("Clear the picked point"));
+    clearBtn.title = t("Clear the picked point");
+    popClose.setAttribute("aria-label", t("Close this card"));
+    popOut.textContent = t("Open in different maps");
+    popYa.textContent = t("Open in Yandex Maps ↗");
+    // The card's own body is a clone of a marked-up page card, so applyLang
+    // has already reached it. The head strip is not -- popStrip writes it --
+    // so it is the one piece of an open card that has to be asked again.
+    if (popKind === "entry" && popSpot) {
+      popStrip(spotIcon(popSpot.card), tcat(popSpot.cat || ""), "entry");
+    } else if (popKind === "point") {
+      popStrip(null, t("Picked point"), "point");
+    }
+    if (cTitle) cTitle.textContent = t("Use a different map?");
+    if (cText) {
+      cText.textContent = t(
+        "The map above is enough to show where something is, but Yandex " +
+          "Maps is the best-surveyed one for Vanadzor and for Armenia " +
+          "generally, and the one this index was checked against — other " +
+          "maps often have the place under an old name, in the wrong " +
+          "spot, or not at all. Continuing opens a plain point at these " +
+          "coordinates, with no listing behind it.",
+      );
+    }
+    if (cancelBtn) cancelBtn.textContent = t("Cancel");
+    if (goLink) goLink.textContent = t("Continue ↗");
+    if (osmLink) osmLink.textContent = t("OpenStreetMap contributors");
+    // The Yandex button, the pins and the spoken line all name the current
+    // selection, so they come back through the code that draws it.
+    showSelection();
+  });
+
 })();

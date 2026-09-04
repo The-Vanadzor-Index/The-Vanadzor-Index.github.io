@@ -89,8 +89,8 @@
   var tooltipTimer = null;
 
   function baseTooltipText(btn) {
-    if (btn !== searchShareBtn) return "Copy link";
-    return isCategoryOnlyShare() ? "Copy category link" : "Copy search link";
+    if (btn !== searchShareBtn) return t("Copy link");
+    return t(isCategoryOnlyShare() ? "Copy category link" : "Copy search link");
   }
 
   function hideTooltip() {
@@ -145,7 +145,7 @@
         function () {
           showTooltip(
             btn,
-            legacyCopy(text) ? successMsg : "Press and hold to copy",
+            legacyCopy(text) ? successMsg : t("Press and hold to copy"),
             true,
           );
         },
@@ -154,7 +154,7 @@
     }
     showTooltip(
       btn,
-      legacyCopy(text) ? successMsg : "Press and hold to copy",
+      legacyCopy(text) ? successMsg : t("Press and hold to copy"),
       true,
     );
   }
@@ -175,7 +175,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "card-action-btn share-btn";
-      btn.setAttribute("aria-label", "Copy link to this entry");
+      btn.setAttribute("aria-label", t("Copy link to this entry"));
       actions.appendChild(btn);
     }
   }
@@ -187,7 +187,7 @@
     var card = btn.closest(".card");
     if (!card) return;
     e.preventDefault();
-    copyLink(btn, entryUrl(card), "Link copied");
+    copyLink(btn, entryUrl(card), t("Link copied"));
   });
 
   // Search-box button — markup lives in the template (a one-off control,
@@ -215,9 +215,9 @@
 
   if (searchShareBtn) {
     searchShareBtn.addEventListener("click", function () {
-      var successMsg = isCategoryOnlyShare()
-        ? "Category link copied"
-        : "Search link copied";
+      var successMsg = t(
+        isCategoryOnlyShare() ? "Category link copied" : "Search link copied",
+      );
       copyLink(searchShareBtn, searchUrl(), successMsg);
     });
   }
@@ -442,4 +442,13 @@
   }
 
   handleDeepLinks();
+
+  document.addEventListener("vanadzor:langchange", function () {
+    var btns = document.querySelectorAll(".share-btn");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].setAttribute("aria-label", t("Copy link to this entry"));
+    }
+    updateSearchShareVisibility();
+  });
+
 })();

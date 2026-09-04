@@ -66,10 +66,20 @@ function makeEmptyFilterEl(label, onActivate) {
 
 // A term matches only at the start of a word in data-search, so "bar"
 // finds "Barber" and "Bar B.Q." but not the "bar" buried in "Gambaryan".
-// Anything that is not an ASCII letter or digit counts as a word break,
-// which covers spaces, punctuation, slashes in URLs, dashes and emoji.
+// Anything that is not a letter or digit counts as a word break, which
+// covers spaces, punctuation, slashes in URLs, dashes and emoji.
 // Pure number terms stay a loose substring match so that searching a
 // phone number by its tail ("333022") still finds "+37441333022".
+//
+// The class has to name Armenian and Cyrillic letters explicitly and not
+// just ASCII: build.py folds each card's translated name, tag and address
+// into the same data-search, and a class of only [a-z0-9] would find no
+// letter before a Cyrillic one, call every position a word start, and quietly
+// turn those two scripts back into a loose substring match -- so "том" would
+// hit inside "стоматология". These are the lowercase ranges alone, which is
+// all that is needed: the blob and the term are both lowercased first.
+var WORD_CHAR = /[a-z0-9\u0561-\u0587\u0430-\u044f\u0451]/;
+
 function termMatches(blob, term) {
   if (/^[0-9+]+$/.test(term)) {
     return blob.indexOf(term) !== -1;
@@ -77,7 +87,7 @@ function termMatches(blob, term) {
   var from = 0;
   var idx = blob.indexOf(term);
   while (idx !== -1) {
-    if (idx === 0 || !/[a-z0-9]/.test(blob.charAt(idx - 1))) {
+    if (idx === 0 || !WORD_CHAR.test(blob.charAt(idx - 1))) {
       return true;
     }
     from = idx + 1;
@@ -101,19 +111,20 @@ function applyFilters() {
       activeCat === "all" || card.getAttribute("data-cat") === activeCat;
     var searchBlob = card.getAttribute("data-search") || "";
     var matchesSearch = true;
-    for (var t = 0; t < terms.length; t++) {
-      if (!termMatches(searchBlob, terms[t])) {
+    // Not "t" -- var is function-scoped, so a counter by that name shadows
+    // the i18n t() for the whole of applyFilters, and every string this
+    // function builds below throws instead.
+    for (var ti = 0; ti < terms.length; ti++) {
+      if (!termMatches(searchBlob, terms[ti])) {
         matchesSearch = false;
         break;
       }
     }
     var show = matchesCat && matchesSearch;
-    // A cross-referenced copy is one entry filed under a second
-    // subcategory, not a second entry. The masthead total has always
-    // excluded them, so this counter has to as well, or an unfiltered
-    // page reports two more entries than it says it holds. The copy is
-    // still shown -- being findable in both places is the whole point of
-    // it -- it just isn't counted twice. build.py stamps the attribute.
+    // A cross-referenced copy is one entry filed under a second subcategory,
+    // not a second entry. The masthead total has always excluded them, so
+    // the counter here has to as well, or an unfiltered page reports two
+    // more entries than it says it holds. build.py stamps the attribute.
     var isDuplicate = card.getAttribute("data-duplicate") === "true";
     var isFilteredOff =
       card.className.indexOf("personal-off") !== -1 ||
@@ -160,8 +171,12 @@ function applyFilters() {
   }
 
   var resultEl = document.getElementById("resultCount");
-  resultEl.textContent =
-    visibleCount + (visibleCount === 1 ? " entry" : " entries");
+  // The call site picks the English form and tn() picks the language's own,
+  // which is not the same choice: Russian says "21 запись", not "21 записей".
+  resultEl.textContent = tn(
+    visibleCount === 1 ? "{n} entry" : "{n} entries",
+    visibleCount,
+  );
 
   var emptyEl = document.getElementById("emptyState");
   if (visibleCount === 0) {
@@ -169,7 +184,7 @@ function applyFilters() {
     var searchInput = document.getElementById("searchInput");
     if (terms.length) {
       onFilters.push(
-        makeEmptyFilterEl('search "' + rawQuery + '"', function () {
+        makeEmptyFilterEl(t('search "{q}"').replace("{q}", rawQuery), function () {
           flashControl(searchInput ? searchInput.closest(".search-wrap") : null);
           if (searchInput) {
             searchInput.focus();
@@ -188,15 +203,21 @@ function applyFilters() {
         }
       }
       onFilters.push(
-        makeEmptyFilterEl('category "' + activeCat + '"', function () {
-          flashControl(activeChip);
-        }),
+        makeEmptyFilterEl(
+          t('category "{cat}"').replace(
+            "{cat}",
+            activeChip ? activeChip.textContent.trim() : activeCat,
+          ),
+          function () {
+            flashControl(activeChip);
+          },
+        ),
       );
     }
     var personalToggle = document.getElementById("personalToggle");
     if (personalToggle && personalToggle.checked) {
       onFilters.push(
-        makeEmptyFilterEl("personal contacts hidden", function () {
+        makeEmptyFilterEl(t("personal contacts hidden"), function () {
           flashControl(personalToggle.closest(".personal-toggle-wrap"));
         }),
       );
@@ -204,7 +225,7 @@ function applyFilters() {
     var favToggle = document.getElementById("favoritesToggle");
     if (favToggle && favToggle.checked) {
       onFilters.push(
-        makeEmptyFilterEl("favorites", function () {
+        makeEmptyFilterEl(t("favorites"), function () {
           flashControl(favToggle.closest(".favorites-toggle-wrap"));
         }),
       );
@@ -212,24 +233,24 @@ function applyFilters() {
     var visitedToggle = document.getElementById("visitedToggle");
     if (visitedToggle && visitedToggle.checked) {
       onFilters.push(
-        makeEmptyFilterEl("visited", function () {
+        makeEmptyFilterEl(t("visited"), function () {
           flashControl(visitedToggle.closest(".visited-toggle-wrap"));
         }),
       );
     }
     emptyEl.textContent = "";
     if (onFilters.length) {
-      emptyEl.appendChild(document.createTextNode("No entries match with "));
+      emptyEl.appendChild(document.createTextNode(t("No entries match with ")));
       for (var f = 0; f < onFilters.length; f++) {
         if (f > 0) {
-          var sep = f === onFilters.length - 1 ? " and " : ", ";
+          var sep = f === onFilters.length - 1 ? t(" and ") : ", ";
           emptyEl.appendChild(document.createTextNode(sep));
         }
         emptyEl.appendChild(onFilters[f]);
       }
-      emptyEl.appendChild(document.createTextNode(" on."));
+      emptyEl.appendChild(document.createTextNode(t(" on.")));
     } else {
-      emptyEl.textContent = "No entries match that search. Try a shorter word.";
+      emptyEl.textContent = t("No entries match that search. Try a shorter word.");
     }
     emptyEl.style.display = "block";
   } else {
@@ -289,3 +310,8 @@ document
     }
   });
 })();
+
+// The empty state and the result count are written by applyFilters, so the
+// language switch just asks for them again.
+document.addEventListener("vanadzor:langchange", applyFilters);
+

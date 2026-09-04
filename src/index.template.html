@@ -484,6 +484,75 @@
         transform: scale(0.96);
       }
 
+      /* ---------- Language picker ----------
+         The mirror of .theme-picker across the masthead: same paper, same
+         hairline, same elevation, opposite corner. Five pills rather than a
+         menu, because five is few enough to show at once and a row of them
+         needs no open/close state to go wrong — and because each pill can
+         then be written in its own language, which is the one label a reader
+         who cannot read this page is certain to recognise.
+
+         The pills are built by 00-i18n.js from the generated table, so this
+         box is empty markup until script runs and .js-only keeps it out of a
+         no-JS page entirely — there, English is not a choice but the only
+         thing the document contains. */
+      .lang-picker {
+        position: absolute;
+        top: 1.2rem;
+        left: 1.2rem;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 1px;
+        padding: 2px;
+        border: 1px solid var(--line);
+        border-radius: var(--r-pill);
+        background: var(--paper-card);
+        box-shadow: var(--elev-2);
+      }
+      .lang-pill {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        padding: 0.4rem 0.46rem;
+        border-radius: var(--r-pill);
+        cursor: pointer;
+        transition:
+          background var(--t-fast) var(--ease),
+          color var(--t-fast) var(--ease);
+      }
+      .lang-pill:hover {
+        color: var(--ink);
+        background: var(--tint-amber);
+      }
+      /* The chosen one is inked rather than merely darker, so the group reads
+         as a setting with a value and not as five buttons of equal weight. */
+      .lang-pill.active {
+        color: var(--paper);
+        background: var(--pine);
+      }
+      /* Armenian and Cyrillic have taller caps than the Latin pills beside
+         them; letting the row centre on the tallest keeps the baseline even. */
+      .lang-pill[lang="hy"],
+      .lang-pill[lang="ru"] {
+        font-size: 0.58rem;
+      }
+      @media (max-width: 420px) {
+        .lang-picker {
+          top: 0.9rem;
+          left: 0.9rem;
+        }
+        .lang-pill {
+          padding: 0.34rem 0.3rem;
+          letter-spacing: 0.04em;
+        }
+      }
+
       /* ---------- Masthead ---------- */
       header.masthead {
         position: relative;
@@ -1424,9 +1493,9 @@
       }
       /* The label wraps rather than running past its own frame. It said
          nowrap while the page was English-only, where it fits a 320px
-         screen; a longer label -- a translation, or a reworded one --
-         overflowed the button instead of using a second line.
-         text-wrap:balance splits those two lines evenly where it is
+         screen; every other language is longer -- Armenian and French by
+         some 50px -- and overflowed the button instead of using a second
+         line. text-wrap:balance splits those two lines evenly where it is
          understood and is ignored where it is not. */
       .download-btn {
         display: flex;
@@ -3801,6 +3870,13 @@
           </g>
         </svg>
       </div>
+      <div
+        aria-label="Language"
+        data-ta
+        class="js-only lang-picker"
+        id="langPicker"
+        role="radiogroup"
+      ></div>
       <div class="js-only theme-picker">
         <button
           aria-label="Switch to light mode"
@@ -3831,7 +3907,7 @@
              after the button so the focus-visible rule can select it. -->
         <span aria-hidden="true" class="theme-status" id="themeStatus"></span>
       </div>
-      <div class="eyebrow">Compiled &amp; Cross-Referenced</div>
+      <div class="eyebrow" data-t>Compiled &amp; Cross-Referenced</div>
       <h1 class="title" id="mastheadTitle">
         <span class="title-word">The</span>
         <!-- Jumps to the About section. A plain anchor, so it works with
@@ -3843,11 +3919,11 @@
         >
         <em class="title-word">Index</em>
       </h1>
-      <div class="subtitle">
+      <div class="subtitle" data-t>
         a working directory of kitchens, beds, transport, clinics, offices &amp;
         workshops
       </div>
-      <div class="stamp">393 entries on file</div>
+      <div class="stamp" data-tn>393 entries on file</div>
     </header>
     <!-- Everything the sticky controls bar belongs to. position:sticky is
          bounded by its containing block, so scoping the bar to this wrapper
@@ -3860,6 +3936,7 @@
         <div class="search-wrap js-only">
           <input
             autocomplete="off"
+            data-tp
             id="searchInput"
             placeholder="Search a name, street, or trade…"
             type="text"
@@ -3867,6 +3944,7 @@
           <button
             aria-label="Copy a link to this search"
             class="search-share-btn"
+            data-ta
             id="searchShareBtn"
             type="button"
           ></button>
@@ -3875,6 +3953,8 @@
           <div class="toggle-row-inner">
             <label
               aria-label="Hide most personal contacts (individuals, not businesses)"
+              data-ta
+              data-tt
               class="js-only toggle-pill personal-toggle-wrap"
               for="personalToggle"
               title="Hide most personal contacts (individuals, not businesses)"
@@ -3883,10 +3963,12 @@
                 <input type="checkbox" id="personalToggle" />
                 <span class="switch-track"></span>
               </span>
-              <span>Hide individuals</span>
+              <span data-t>Hide individuals</span>
             </label>
             <label
               aria-label="Show only entries marked as favorites"
+              data-ta
+              data-tt
               class="js-only toggle-pill favorites-toggle-wrap"
               for="favoritesToggle"
               title="Show only entries marked as favorites"
@@ -3895,10 +3977,12 @@
                 <input type="checkbox" id="favoritesToggle" />
                 <span class="switch-track"></span>
               </span>
-              <span>Favorites</span>
+              <span data-t>Favorites</span>
             </label>
             <label
               aria-label="Show only entries marked as visited"
+              data-ta
+              data-tt
               class="js-only toggle-pill visited-toggle-wrap"
               for="visitedToggle"
               title="Show only entries marked as visited"
@@ -3907,7 +3991,7 @@
                 <input type="checkbox" id="visitedToggle" />
                 <span class="switch-track"></span>
               </span>
-              <span>Visited</span>
+              <span data-t>Visited</span>
             </label>
           </div>
         </div>
@@ -3916,29 +4000,31 @@
         <button
           aria-label="Scroll categories left"
           class="chip-arrow chip-arrow-left disabled js-only"
+          data-ta
           type="button"
         >
           ‹
         </button>
         <div class="chip-row" id="chipRow">
-          <a class="chip active js-only" data-cat="all" href="#top">All</a>
-          <a class="chip" data-cat="Medicine" href="#cat-0">Medicine</a>
-          <a class="chip" data-cat="Government Services" href="#cat-1"
+          <a class="chip active js-only" data-cat="all" data-t href="#top">All</a>
+          <a class="chip" data-cat="Medicine" data-t="cat" href="#cat-0">Medicine</a>
+          <a class="chip" data-cat="Government Services" data-t="cat" href="#cat-1"
             >Government Services</a
           >
-          <a class="chip" data-cat="Transport &amp; Delivery" href="#cat-2"
+          <a class="chip" data-cat="Transport &amp; Delivery" data-t="cat" href="#cat-2"
             >Transport &amp; Delivery</a
           >
-          <a class="chip" data-cat="Services &amp; Tradespeople" href="#cat-3"
+          <a class="chip" data-cat="Services &amp; Tradespeople" data-t="cat" href="#cat-3"
             >Services &amp; Tradespeople</a
           >
-          <a class="chip" data-cat="Food" href="#cat-4">Food</a>
-          <a class="chip" data-cat="Hotels" href="#cat-5">Hotels</a>
-          <a class="chip" data-cat="Leisure" href="#cat-6">Leisure</a>
+          <a class="chip" data-cat="Food" data-t="cat" href="#cat-4">Food</a>
+          <a class="chip" data-cat="Hotels" data-t="cat" href="#cat-5">Hotels</a>
+          <a class="chip" data-cat="Leisure" data-t="cat" href="#cat-6">Leisure</a>
         </div>
         <button
           aria-label="Scroll categories right"
           class="chip-arrow chip-arrow-right js-only"
+          data-ta
           type="button"
         >
           ›
@@ -3949,7 +4035,7 @@
     <main id="main">
       <!-- @@CARDS@@ -->
     </main>
-    <div class="empty-state" id="emptyState">
+    <div class="empty-state" data-t id="emptyState">
       No entries match that search. Try a shorter word.
     </div>
     <div class="js-only hidden-subcats-notice" id="hiddenSubcatsNotice"></div>
@@ -3965,12 +4051,12 @@
          directory never hides it. -->
     <section class="about" id="about">
       <div class="about-head">
-        <h2>Vanadzor</h2>
-        <span class="about-kicker">The city on stage</span>
+        <h2 data-t>Vanadzor</h2>
+        <span class="about-kicker" data-t>The city on stage</span>
       </div>
       <div class="about-body">
         <div class="about-prose">
-          <p>
+          <p data-th>
             <a
               href="https://en.wikipedia.org/wiki/Vanadzor"
               rel="noopener"
@@ -4015,7 +4101,7 @@
             strung out along the water. Those two walls are the ridgelines
             drawn as outlines behind the title at the top of this page.
           </p>
-          <p>
+          <p data-th>
             It was known for centuries as Gharakilisa, was renamed Kirovakan
             in 1935 after the Soviet official
             <a
@@ -4050,28 +4136,28 @@
               >Gyumri</a
             >, which sat closer to the epicentre and lost far more.
           </p>
-          <p>
+          <p data-th>
             The plate below draws the municipal boundary, the river
             confluence and the city's named districts. Every listing in this
             index is somewhere inside that outline.
           </p>
         </div>
         <dl class="about-facts">
-          <dt>Province</dt>
-          <dd>Lori</dd>
-          <dt>Population</dt>
-          <dd>75,186 <span class="muted">(2022 census)</span></dd>
-          <dt>Elevation</dt>
-          <dd>≈ 1,350 m</dd>
-          <dt>Rivers</dt>
-          <dd>Pambak · Tandzut · Vanadzor</dd>
-          <dt>Postal</dt>
+          <dt data-t>Province</dt>
+          <dd data-t>Lori</dd>
+          <dt data-t>Population</dt>
+          <dd>75,186 <span class="muted" data-t>(2022 census)</span></dd>
+          <dt data-t>Elevation</dt>
+          <dd data-t>≈ 1,350 m</dd>
+          <dt data-t>Rivers</dt>
+          <dd data-t>Pambak · Tandzut · Vanadzor</dd>
+          <dt data-t>Postal</dt>
           <dd>2001–2006</dd>
-          <dt>Dialling</dt>
+          <dt data-t>Dialling</dt>
           <dd>0322</dd>
         </dl>
       </div>
-      <div class="about-source">
+      <div class="about-source" data-t>
         Population from the 2022 Armenian census; other figures from public
         reference sources and the author's own head.
       </div>
@@ -4141,10 +4227,11 @@
          regardless. -->
     <figure class="map-plate">
       <figcaption>
-        Plate — Vanadzor &amp; its districts
-        <span class="plate-note">
+        <span data-t>Plate — Vanadzor &amp; its districts</span>
+        <span class="plate-note" data-t>
           Municipal boundary, with the Pambak, Tandzut &amp; Vanadzor
           rivers meeting near the centre.
+        </span>
       </figcaption>
         <!-- The drawing and its zoom live in one box. Without JS that box is
              simply a scroller with the plate drawn wider than it (see
@@ -4156,7 +4243,7 @@
         <div class="plate-view" id="plateView">
         <svg viewBox="-46 -46 1092 787" xmlns="http://www.w3.org/2000/svg"
              id="plateSvg"
-             role="group" aria-label="Outline map of Vanadzor showing its districts">
+             role="group" data-ta aria-label="Outline map of Vanadzor showing its districts">
           <path d="M0.0 33.7 L61.6 90.2 L83.6 122.3 L94.9 147.9 L112.7 168.1 L132.2 183.7 L131.6 194.3 L147.2 199.2 L154.6 211.4 L147.3 223.5 L147.3 229.4 L156.5 240.7 L143.4 253.8 L141.3 261.5 L144.5 264.8 L155.9 253.7 L167.3 250.1 L222.0 263.9 L224.7 256.3 L234.5 249.7 L248.8 251.5 L248.6 259.4 L260.5 272.3 L261.7 291.6 L258.4 309.0 L270.1 340.2 L279.0 345.4 L312.9 346.1 L332.7 336.1 L337.3 337.6 L343.2 364.9 L335.7 392.4 L358.3 398.9 L356.8 405.0 L362.9 408.9 L384.5 403.6 L391.5 405.8 L417.0 424.2 L416.9 431.6 L410.9 441.5 L412.5 444.9 L458.8 450.3 L463.7 454.1 L471.6 467.3 L467.0 480.0 L486.2 498.8 L489.6 509.8 L492.5 555.9 L490.0 569.3 L484.8 573.1 L483.2 583.8 L486.2 593.1 L481.1 614.5 L467.7 645.7 L421.7 639.3 L420.1 643.9 L446.9 657.2 L451.2 666.0 L447.6 670.6 L452.2 674.6 L473.5 664.6 L496.7 624.5 L505.3 626.1 L512.1 622.6 L528.7 627.8 L537.1 623.6 L539.1 616.6 L527.9 612.0 L518.8 615.6 L507.3 609.3 L518.4 576.8 L517.2 560.2 L526.3 524.3 L579.2 520.8 L627.1 544.3 L624.2 575.2 L639.4 578.2 L645.2 573.9 L655.5 572.8 L694.7 596.2 L702.1 594.8 L738.2 604.5 L773.2 607.4 L780.0 615.2 L768.8 640.4 L748.4 666.7 L742.1 688.5 L745.2 695.2 L755.0 695.0 L756.2 683.8 L770.5 668.1 L774.8 666.1 L783.1 672.5 L782.0 660.4 L791.1 647.1 L800.5 652.0 L807.0 650.6 L812.7 643.0 L825.3 646.1 L855.0 669.7 L861.0 670.4 L871.8 663.2 L887.7 664.8 L891.3 680.2 L897.2 680.7 L903.8 662.9 L914.5 659.1 L949.9 657.6 L972.3 672.3 L977.7 662.1 L999.2 668.5 L1000.0 662.7 L968.1 629.5 L947.3 628.8 L943.5 614.8 L925.7 630.2 L920.0 627.6 L878.0 635.2 L854.4 619.5 L854.1 611.7 L870.8 600.9 L875.2 575.3 L903.1 546.7 L866.7 521.6 L864.5 515.3 L852.3 504.5 L791.0 473.0 L793.1 468.7 L785.5 464.1 L776.6 462.1 L777.4 429.1 L793.1 420.6 L792.4 416.1 L780.4 407.8 L768.1 405.0 L759.8 409.7 L752.2 401.1 L745.9 399.9 L748.2 418.9 L728.7 421.5 L679.2 396.7 L653.8 391.5 L629.4 363.6 L620.0 357.6 L602.8 366.0 L596.4 365.7 L579.9 334.6 L582.6 330.8 L592.6 331.2 L594.1 320.8 L537.4 299.3 L538.0 293.6 L528.8 298.4 L524.8 296.7 L527.2 288.2 L517.0 290.3 L510.4 285.3 L499.3 284.8 L486.6 275.9 L480.3 256.2 L469.1 261.5 L460.6 259.9 L454.3 248.9 L438.1 244.6 L423.3 226.2 L406.0 223.9 L386.7 228.2 L375.5 220.6 L315.0 208.9 L319.3 201.8 L313.5 192.7 L308.6 138.3 L312.0 104.2 L278.4 52.4 L199.3 38.6 L187.1 48.2 L156.4 23.1 L117.1 1.3 L79.8 0.0 L26.6 7.5 L0.0 33.7 Z" class="mp-bound" />
           <path d="M931.6 658.4 L923.3 654.1 L917.0 654.3 L910.7 648.9 L892.4 648.1 L879.4 643.3 L874.0 644.2 L858.5 639.7 L797.1 577.7 L763.2 552.5 L677.6 527.9 L668.2 523.1 L653.1 508.7 L636.9 501.7 L622.0 486.7 L614.9 469.3 L593.1 450.2 L589.5 439.5" class="mp-river" />
           <path d="M589.5 439.5 L590.4 417.4 L600.3 398.2 L597.1 372.8 L587.8 350.7" class="mp-river" />
@@ -4215,65 +4302,65 @@
             <use class="mp-sub" href="#mpn-khndzorut-proper-g" />
           </g>
           <g class="mp-labels">
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Taron, Kongo, Tavros, Meqenashinararneri &amp; Atskhaatner">
-              <title>Taron, Kongo, Tavros, Meqenashinararneri &amp; Atskhaatner</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Taron, Kongo, Tavros, Meqenashinararneri &amp; Atskhaatner">
+              <title data-t="dist">Taron, Kongo, Tavros, Meqenashinararneri &amp; Atskhaatner</title>
               <use class="mp-hit" href="#mpd-taron-g" />
               <g class="mp-flag" transform="translate(219.3 113.6)">
                 <g class="mp-flag-in">
                   <rect x="-141.6" y="-31.0" width="283.2" height="62.0" rx="3" />
                   <text class="mp-en" x="0" y="-12.0" text-anchor="middle">Taron</text>
-                  <text class="mp-kind" x="0" y="5.0" text-anchor="middle">Kongo · Tavros</text>
-                  <text class="mp-kind" x="0" y="19.0" text-anchor="middle">Meqenashinararneri · Atskhaatner</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="5.0" text-anchor="middle">Kongo · Tavros</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="19.0" text-anchor="middle">Meqenashinararneri · Atskhaatner</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Khimzavod — Chemical Plant">
-              <title>Khimzavod — Chemical Plant</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Khimzavod — Chemical Plant">
+              <title data-t="dist">Khimzavod — Chemical Plant</title>
               <use class="mp-hit" href="#mpd-khimzavod-g" />
               <g class="mp-flag" transform="translate(309.1 300.4)">
                 <g class="mp-flag-in">
                   <rect x="-68.7" y="-22.0" width="137.4" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Khimzavod</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Chemical Plant</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Chemical Plant</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Dimats, with the Nersisyan quarter &amp; Aghayan">
-              <title>Dimats, with the Nersisyan quarter &amp; Aghayan</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Dimats, with the Nersisyan quarter &amp; Aghayan">
+              <title data-t="dist">Dimats, with the Nersisyan quarter &amp; Aghayan</title>
               <use class="mp-hit" href="#mpd-dimats-g" />
               <g class="mp-flag" transform="translate(672.3 463.8)">
                 <g class="mp-flag-in">
                   <rect x="-121.3" y="-22.0" width="242.7" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Dimats</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Nersisyan Quarter · Aghayan</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Nersisyan Quarter · Aghayan</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Kentron — Centre">
-              <title>Kentron — Centre</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Kentron — Centre">
+              <title data-t="dist">Kentron — Centre</title>
               <use class="mp-hit" href="#mpd-kentron-g" />
               <g class="mp-flag" transform="translate(529.1 456.0)">
                 <g class="mp-flag-in">
                   <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Kentron</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Centre</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Centre</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Khndzorut, Gugark, Bolgarski, Shahumyan &amp; Bazum">
-              <title>Khndzorut, Gugark, Bolgarski, Shahumyan &amp; Bazum</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Khndzorut, Gugark, Bolgarski, Shahumyan &amp; Bazum">
+              <title data-t="dist">Khndzorut, Gugark, Bolgarski, Shahumyan &amp; Bazum</title>
               <use class="mp-hit" href="#mpd-khndzorut-g" />
               <g class="mp-flag" transform="translate(825.9 542.8)">
                 <g class="mp-flag-in">
                   <rect x="-84.9" y="-31.0" width="169.8" height="62.0" rx="3" />
                   <text class="mp-en" x="0" y="-12.0" text-anchor="middle">Khndzorut</text>
-                  <text class="mp-kind" x="0" y="5.0" text-anchor="middle">Gugark · Bolgarski</text>
-                  <text class="mp-kind" x="0" y="19.0" text-anchor="middle">Shahumyan · Bazum</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="5.0" text-anchor="middle">Gugark · Bolgarski</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="19.0" text-anchor="middle">Shahumyan · Bazum</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Yerevan Highway">
-              <title>Yerevan Highway</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Yerevan Highway">
+              <title data-t="dist">Yerevan Highway</title>
               <use class="mp-hit" href="#mpd-yerevan-highway-g" />
               <g class="mp-flag" transform="translate(701.2 564.5)">
                 <g class="mp-flag-in">
@@ -4282,19 +4369,19 @@
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Third Massif — the &ldquo;Opposite District&rdquo;">
-              <title>Third Massif — the &ldquo;Opposite District&rdquo;</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Third Massif — the &ldquo;Opposite District&rdquo;">
+              <title data-t="dist">Third Massif — the &ldquo;Opposite District&rdquo;</title>
               <use class="mp-hit" href="#mpd-third-massif-g" />
               <g class="mp-flag" transform="translate(405.6 255.1)">
                 <g class="mp-flag-in">
                   <rect x="-89.0" y="-22.0" width="177.9" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Third Massif</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">“Opposite District”</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">“Opposite District”</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist" tabindex="0" role="img" aria-label="Darpas">
-              <title>Darpas</title>
+            <g class="mp-dist" tabindex="0" role="img" data-ta="dist" aria-label="Darpas">
+              <title data-t="dist">Darpas</title>
               <use class="mp-hit" href="#mpd-darpas-g" />
               <g class="mp-flag" transform="translate(144.0 185.4)">
                 <g class="mp-flag-in">
@@ -4304,157 +4391,157 @@
               </g>
             </g>
 
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Tavros — Neighbourhood">
-              <title>Tavros — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Tavros — Neighbourhood">
+              <title data-t="dist">Tavros — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-tavros-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(157.9 140.4)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Tavros</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Kongo — Neighbourhood">
-              <title>Kongo — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Kongo — Neighbourhood">
+              <title data-t="dist">Kongo — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-kongo-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(291.0 184.9)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Kongo</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-4 — Suburb">
-              <title>Taron-4 — Suburb</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Taron-4 — Suburb">
+              <title data-t="dist">Taron-4 — Suburb</title>
               <use class="mp-hit" href="#mpn-taron-4-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(235.2 85.3)">
                 <g class="mp-flag-in">
                   <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-4</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Suburb</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Suburb</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-3 — Suburb">
-              <title>Taron-3 — Suburb</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Taron-3 — Suburb">
+              <title data-t="dist">Taron-3 — Suburb</title>
               <use class="mp-hit" href="#mpn-taron-3-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(61.4 30.5)">
                 <g class="mp-flag-in">
                   <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-3</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Suburb</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Suburb</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-2 — Suburb">
-              <title>Taron-2 — Suburb</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Taron-2 — Suburb">
+              <title data-t="dist">Taron-2 — Suburb</title>
               <use class="mp-hit" href="#mpn-taron-2-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(101.3 56.9)">
                 <g class="mp-flag-in">
                   <rect x="-50.9" y="-22.0" width="101.7" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-2</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Suburb</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Suburb</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Taron-1 — Neighbourhood">
-              <title>Taron-1 — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Taron-1 — Neighbourhood">
+              <title data-t="dist">Taron-1 — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-taron-1-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(160.2 102.9)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Taron-1</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Meqenashinararneri — Neighbourhood">
-              <title>Meqenashinararneri — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Meqenashinararneri — Neighbourhood">
+              <title data-t="dist">Meqenashinararneri — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-meqenashinararneri-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(209.7 103.7)">
                 <g class="mp-flag-in">
                   <rect x="-111.9" y="-22.0" width="223.8" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Meqenashinararneri</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="GSK-3 — Neighbourhood">
-              <title>GSK-3 — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="GSK-3 — Neighbourhood">
+              <title data-t="dist">GSK-3 — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-gsk-3-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(129.7 35.7)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">GSK-3</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="GSK-4 — Neighbourhood">
-              <title>GSK-4 — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="GSK-4 — Neighbourhood">
+              <title data-t="dist">GSK-4 — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-gsk-4-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(107.8 61.7)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">GSK-4</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="GSK-7 — Neighbourhood">
-              <title>GSK-7 — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="GSK-7 — Neighbourhood">
+              <title data-t="dist">GSK-7 — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-gsk-7-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(78.7 40.6)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">GSK-7</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Bazum — Neighbourhood">
-              <title>Bazum — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Bazum — Neighbourhood">
+              <title data-t="dist">Bazum — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-bazum-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(811.3 534.1)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Bazum</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Bolgarski — Bulgarian Quarter">
-              <title>Bolgarski — Bulgarian Quarter</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Bolgarski — Bulgarian Quarter">
+              <title data-t="dist">Bolgarski — Bulgarian Quarter</title>
               <use class="mp-hit" href="#mpn-bolgarski-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(863.8 551.3)">
                 <g class="mp-flag-in">
                   <rect x="-80.8" y="-22.0" width="161.7" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Bolgarski</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Bulgarian Quarter</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Bulgarian Quarter</text>
                 </g>
               </g>
             </g>
-            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" aria-label="Khndzorut — Neighbourhood">
-              <title>Khndzorut — Neighbourhood</title>
+            <g class="mp-dist mp-dist-sub" tabindex="0" role="img" data-ta="dist" aria-label="Khndzorut — Neighbourhood">
+              <title data-t="dist">Khndzorut — Neighbourhood</title>
               <use class="mp-hit" href="#mpn-khndzorut-proper-g" />
               <g class="mp-flag mp-flag-sub" transform="translate(857.9 646.1)">
                 <g class="mp-flag-in">
                   <rect x="-64.7" y="-22.0" width="129.3" height="44.0" rx="3" />
                   <text class="mp-en" x="0" y="-3.0" text-anchor="middle">Khndzorut</text>
-                  <text class="mp-kind" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
+                  <text class="mp-kind" data-t="dist" x="0" y="14.0" text-anchor="middle">Neighbourhood</text>
                 </g>
               </g>
             </g>
           </g>
           <g class="mp-scale">
             <path d="M40 661.2 h177.3 M40 654.2 v14 M217.3 654.2 v14" />
-            <text x="128.7" y="647.2" text-anchor="middle">2 km</text>
+            <text x="128.7" y="647.2" text-anchor="middle" data-t>2 km</text>
           </g>
           <g class="mp-north">
             <path d="M954.0 56 l0 -34 M954.0 22 l-7 11 M954.0 22 l7 11" />
-            <text x="954.0" y="76" text-anchor="middle">N</text>
+            <text x="954.0" y="76" text-anchor="middle" data-t>N</text>
           </g>
         </svg>
         <!-- Reachable by keyboard and by trackpad, which pinch alone is not,
@@ -4462,12 +4549,12 @@
              out of the drawing's corners: the scale bar has the bottom left
              and the north arrow the top right. -->
         <div class="plate-zoom js-only" id="plateZoom">
-          <button type="button" id="plateZoomOut" aria-label="Zoom the plate out">
+          <button type="button" id="plateZoomOut" aria-label="Zoom the plate out" data-ta>
             &#8722;</button
-          ><button type="button" id="plateZoomIn" aria-label="Zoom the plate in">
+          ><button type="button" id="plateZoomIn" aria-label="Zoom the plate in" data-ta>
             +</button
-          ><button type="button" id="plateZoomReset" aria-label="Fit the whole plate again">
-            Fit</button
+          ><button type="button" id="plateZoomReset" aria-label="Fit the whole plate again" data-ta>
+            <span data-t>Fit</span></button
           >
         </div>
         </div>
@@ -4477,7 +4564,7 @@
              a drawing of somewhere. It needs the panel, so it is js-only
              and absent from a saved snapshot, where there would be no
              tiles to draw it with. -->
-        <button class="js-only plate-open" id="cityMapBtn" type="button">
+        <button class="js-only plate-open" data-t id="cityMapBtn" type="button">
           Open the full map of Vanadzor
         </button>
         <!-- The boundary and rivers are a drawing traced from OSM geometry,
@@ -4490,7 +4577,7 @@
              way. The zones themselves come from elsewhere and are named
              separately, so that the OSM credit keeps saying exactly what it
              covers. -->
-        <div class="plate-credit">
+        <div class="plate-credit" data-th>
           Boundary, rivers and neighbourhood outlines ©
           <a
             href="https://www.openstreetmap.org/copyright"
@@ -4521,19 +4608,21 @@
       </figure>
     </section>
     <footer>
-      <button class="js-only download-btn" id="downloadBtn" type="button">
+      <button class="js-only download-btn" data-t id="downloadBtn" type="button">
         Download the index for offline use
       </button>
-      Entries link out to Yandex Maps, social media, and official sites where
-      available
-      <div class="credit">
+      <span data-t
+        >Entries link out to Yandex Maps, social media, and official sites where
+        available</span
+      >
+      <div class="credit" data-t>
         This directory is a community-maintained, best-effort resource.
         Inclusion is not an endorsement. Nobody involved in compiling or
         maintaining this index is responsible for the accuracy of any listing,
         or for the quality, safety, or conduct of any business, service, or
         individual listed here.
       </div>
-      <div class="credit no-js-notice">
+      <div class="credit no-js-notice" data-t>
         JavaScript is currently off, so the search box and some other
         functionality are turned off
       </div>
@@ -4543,7 +4632,7 @@
            modifications indicated. All of that is this block, so don't
            thin it out into a bare "in collaboration with" — see
            LICENSES.md §1. -->
-      <div class="credit">
+      <div class="credit" data-th>
         Compiled in collaboration with
         <a
           href="https://etonawa.notion.site/3332f9074e57803491e5f2449cdd8480"
@@ -4572,7 +4661,7 @@
         added, existing ones are filled out with detail the upstream databases
         did not originally have, and stale data is refreshed.
       </div>
-      <div class="credit credit-thanks">
+      <div class="credit credit-thanks" data-th>
         With ❤️ for
         <a
           href="https://www.birthrightarmenia.org/"
@@ -4585,7 +4674,7 @@
         >
         &amp; all visitors
       </div>
-      <div class="credit credit-made-by">
+      <div class="credit credit-made-by" data-th>
         Made by
         <a href="mailto:kocharyan.armen@protonmail.com">Armen Kocharyan</a>
       </div>
@@ -4593,7 +4682,7 @@
            the name/artwork that neither licence covers — the last of which
            also ships as the masthead and icon files served beside it.
            LICENSES.md is the map; this is the short form of it. -->
-      <div class="credit credit-license">
+      <div class="credit credit-license" data-th>
         Directory content licensed
         <a
           href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
@@ -4622,7 +4711,7 @@
     </footer>
     <!-- Pomegranate back-to-top. A plain anchor, so it keeps
          working with JavaScript switched off. -->
-    <a aria-label="Back to top" class="js-only to-top" href="#top">
+    <a aria-label="Back to top" class="js-only to-top" data-ta href="#top">
       <svg
         aria-hidden="true"
         fill="none"

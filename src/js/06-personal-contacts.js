@@ -5,7 +5,7 @@
     if (c.querySelector(".badge-individual")) continue;
     var badge = document.createElement("span");
     badge.className = "badge-individual";
-    badge.textContent = "Individual";
+    badge.textContent = t("Individual");
     var tag = c.querySelector(".card-tag");
     var anchor = tag || c.querySelector(".card-name");
     if (anchor && anchor.parentNode === c) {
@@ -89,7 +89,7 @@
     } else {
       notice.className = "js-only hidden-subcats-notice visible";
       notice.textContent =
-        "Fully hidden subcategories: " + names.join(", ");
+        t("Fully hidden subcategories: ") + names.join(", ");
     }
   }
 
@@ -146,7 +146,7 @@
   if (notice && wrap) {
     notice.setAttribute("role", "button");
     notice.setAttribute("tabindex", "0");
-    notice.title = "Show the toggle that's hiding these";
+    notice.title = t("Show the toggle that's hiding these");
 
     // flashControl (02-filtering.js) does the actual scroll-into-view
     // and flash — shared with the empty-state filter list, which points
@@ -163,4 +163,14 @@
       }
     });
   }
+
+  document.addEventListener("vanadzor:langchange", function () {
+    var badges = document.querySelectorAll(".badge-individual");
+    for (var i = 0; i < badges.length; i++) {
+      badges[i].textContent = t("Individual");
+    }
+    if (notice) notice.title = t("Show the toggle that's hiding these");
+    updateHiddenSubcatsNotice(toggle.checked);
+  });
+
 })();

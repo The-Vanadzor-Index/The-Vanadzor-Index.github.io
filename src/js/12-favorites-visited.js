@@ -144,7 +144,7 @@
       favBtn.textContent = fav ? "★" : "☆";
       favBtn.setAttribute(
         "aria-label",
-        fav ? "Remove from favorites" : "Add to favorites",
+        t(fav ? "Remove from favorites" : "Add to favorites"),
       );
     }
     if (visitedBtn) {
@@ -153,7 +153,7 @@
       visitedBtn.textContent = vis ? "✓" : "○";
       visitedBtn.setAttribute(
         "aria-label",
-        vis ? "Mark as not visited" : "Mark as visited",
+        t(vis ? "Mark as not visited" : "Mark as visited"),
       );
     }
   }
@@ -278,17 +278,21 @@
   function tooltipText(btn) {
     var active = btn.classList.contains("is-active");
     if (btn.classList.contains("fav-btn")) {
-      return active ? "Now in Favorites" : "Add to Favorites";
+      return active ? t("Now in Favorites") : t("Add to Favorites");
     }
-    return active ? "Now in Visited" : "Add to Visited";
+    return active ? t("Now in Visited") : t("Add to Visited");
   }
+
+  var shownTooltipBtn = null;
 
   function hideTooltip() {
     clearTimeout(tooltipTimer);
+    shownTooltipBtn = null;
     if (tooltipEl) tooltipEl.classList.remove("action-tooltip-shown");
   }
 
   function showTooltip(btn, autoHide) {
+    shownTooltipBtn = btn;
     if (!tooltipEl) {
       tooltipEl = document.createElement("div");
       tooltipEl.className = "action-tooltip";
@@ -400,4 +404,11 @@
   if (searchInput) {
     searchInput.addEventListener("input", reorderFavorites);
   }
+
+  document.addEventListener("vanadzor:langchange", function () {
+    var cards = document.querySelectorAll(".card");
+    for (var i = 0; i < cards.length; i++) refreshCard(cards[i]);
+    if (shownTooltipBtn) showTooltip(shownTooltipBtn, false);
+  });
+
 })();

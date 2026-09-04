@@ -15,6 +15,34 @@
       // state or any saved preference in storage.
       clone.setAttribute("data-offline-snapshot", "1");
 
+      // The snapshot comes out in the language the reader was reading, and
+      // in that language only. The clone already carries the swapped text in
+      // its elements -- applyLang wrote it there -- so the other four sets of
+      // data-t-* attributes are pure weight, about a third of the file, and
+      // dropping them is what makes a saved Armenian copy an Armenian
+      // document rather than an English one with Armenian attached.
+      //
+      // data-offline-lang is what tells the saved copy which language it is:
+      // 00-i18n.js reads it when the reader has no stored preference of their
+      // own, so opening the file on a machine that has never seen this page
+      // does not silently reset it to English.
+      clone.setAttribute("data-offline-lang", VANADZOR_LANG);
+      var cloneMarked = clone.querySelectorAll(
+        "[data-t], [data-th], [data-ta], [data-tp], [data-tt]",
+      );
+      for (var m = 0; m < cloneMarked.length; m++) {
+        var el = cloneMarked[m];
+        var names = el.getAttributeNames();
+        for (var a = 0; a < names.length; a++) {
+          if (/^data-t[hapt]?-/.test(names[a])) el.removeAttribute(names[a]);
+        }
+      }
+      // The picker has nothing left to switch between.
+      var clonePicker = clone.querySelector("#langPicker");
+      if (clonePicker && clonePicker.parentNode) {
+        clonePicker.parentNode.removeChild(clonePicker);
+      }
+
       // Show personal-contact cards in the static markup too, as a
       // fallback for the (unlikely) case JS doesn't run in the saved copy.
       var clonePersonalCards = clone.querySelectorAll(
@@ -254,7 +282,9 @@
         offlineNotice.className = "offline-notice";
         offlineNotice.appendChild(
           clone.ownerDocument.createTextNode(
-            "This is a downloaded offline copy — it does not include any updates or revisions made to the index since it was saved.",
+            t(
+              "This is a downloaded offline copy — it does not include any updates or revisions made to the index since it was saved.",
+            ),
           ),
         );
         offlineNotice.appendChild(
@@ -264,7 +294,7 @@
         onlineLink.href = "https://the-vanadzor-index.github.io/";
         onlineLink.rel = "noopener";
         onlineLink.target = "_blank";
-        onlineLink.textContent = "Open the current version online";
+        onlineLink.textContent = t("Open the current version online");
         offlineNotice.appendChild(onlineLink);
         cloneDownloadBtn.parentNode.replaceChild(
           offlineNotice,
@@ -277,7 +307,12 @@
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
-      a.download = "The_Vanadzor_Index-v" + VANADZOR_VERSION + ".html";
+      a.download =
+        "The_Vanadzor_Index-" +
+        (VANADZOR_LANG === "en" ? "" : VANADZOR_LANG + "-") +
+        "v" +
+        VANADZOR_VERSION +
+        ".html";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -286,7 +321,9 @@
       }, 2000);
     } catch (err) {
       alert(
-        'Download failed. You can use your browser\'s "Save Page As" option instead.',
+        t(
+          'Download failed. You can use your browser\'s "Save Page As" option instead.',
+        ),
       );
     }
   });

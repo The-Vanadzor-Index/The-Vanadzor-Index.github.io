@@ -71,15 +71,18 @@
   };
 
   function currentLabel() {
-    return LABELS[nextMode()];
+    return t(LABELS[nextMode()]);
   }
 
   // Names the mode the toggle is in right now, as opposed to the
   // aria-label, which names the mode the next click would move to.
   function statusText() {
-    if (currentMode === "light") return "Light mode";
-    if (currentMode === "dark") return "Dark mode";
-    return "System theme · " + effectiveTheme("system");
+    if (currentMode === "light") return t("Light mode");
+    if (currentMode === "dark") return t("Dark mode");
+    return (
+      t("System theme · ") +
+      t(effectiveTheme("system") === "dark" ? "dark" : "light")
+    );
   }
 
   var statusEl = document.getElementById("themeStatus");
@@ -139,4 +142,9 @@
       mq.addListener(onChange);
     }
   }
+
+  // The button's label names the mode the next press moves to, so it is built
+  // rather than marked up, and a language switch has to ask for it again.
+  document.addEventListener("vanadzor:langchange", updateIcon);
+
 })();

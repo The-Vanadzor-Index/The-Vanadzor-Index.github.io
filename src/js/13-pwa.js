@@ -63,6 +63,7 @@ if ("serviceWorker" in navigator) {
   var readyToShow = false;
   var timer = null;
   var shown = false;
+  var shownKind = null;
 
   function dismiss() {
     if (timer) clearTimeout(timer);
@@ -75,12 +76,13 @@ if ("serviceWorker" in navigator) {
   function render(kind) {
     var text = document.createElement("div");
     text.className = "pwa-install-notice-text";
-    text.textContent =
+    text.textContent = t(
       kind === "ios"
         ? 'Add The Vanadzor Index to your Home Screen for quick, offline-friendly access: tap the Share icon, then "Add to Home Screen."'
         : kind === "mac-safari"
           ? 'Add The Vanadzor Index to your Dock for quick, offline-friendly access: open the Share menu (or File → Add to Dock) and choose "Add to Dock."'
-          : "Install The Vanadzor Index as an app for quick, offline-friendly access.";
+          : "Install The Vanadzor Index as an app for quick, offline-friendly access.",
+    );
 
     var actions = document.createElement("div");
     actions.className = "pwa-install-notice-actions";
@@ -89,7 +91,7 @@ if ("serviceWorker" in navigator) {
       var installBtn = document.createElement("button");
       installBtn.type = "button";
       installBtn.className = "pwa-install-notice-install";
-      installBtn.textContent = "Install";
+      installBtn.textContent = t("Install");
       installBtn.addEventListener("click", function () {
         if (deferredPrompt) {
           deferredPrompt.prompt();
@@ -105,7 +107,7 @@ if ("serviceWorker" in navigator) {
     var dismissBtn = document.createElement("button");
     dismissBtn.type = "button";
     dismissBtn.className = "pwa-install-notice-dismiss";
-    dismissBtn.textContent = kind === "prompt" ? "Not now" : "Got it";
+    dismissBtn.textContent = t(kind === "prompt" ? "Not now" : "Got it");
     dismissBtn.addEventListener("click", dismiss);
     actions.appendChild(dismissBtn);
 
@@ -126,6 +128,7 @@ if ("serviceWorker" in navigator) {
           : null;
     if (!kind) return;
     shown = true;
+    shownKind = kind;
     render(kind);
     notice.classList.add("visible");
   }
@@ -146,4 +149,9 @@ if ("serviceWorker" in navigator) {
       maybeShow();
     }, 3 * 60 * 1000);
   }
+
+  document.addEventListener("vanadzor:langchange", function () {
+    if (shownKind) render(shownKind);
+  });
+
 })();
