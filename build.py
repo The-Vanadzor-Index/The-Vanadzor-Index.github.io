@@ -45,7 +45,7 @@ OUTPUT = ROOT / "index.html"
 # English is the source language: it is what the sources are written in and what
 # a reader without JavaScript gets, so it has no file of its own. Order here is
 # the order the language picker offers them in.
-LANGS = ["hy", "ru", "fr", "es"]
+LANGS = ["hy", "ru"]
 
 CARDS_SLOT = "      <!-- @@CARDS@@ -->\n"
 SCRIPT_SLOT = "      <!-- @@SCRIPT@@ -->\n"

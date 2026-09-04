@@ -19,12 +19,10 @@ var LANG_NAMES = {
   en: "English",
   hy: "Հայերեն",
   ru: "Русский",
-  fr: "Français",
-  es: "Español",
 };
-// What the picker prints on each pill: short enough for five of them to sit in
-// a row on a 320px screen, and each written in its own language.
-var LANG_SHORT = { en: "EN", hy: "ՀԱՅ", ru: "РУС", fr: "FR", es: "ES" };
+// What the picker prints on each pill: short enough for several of them to
+// sit in a row on a 320px screen, and each written in its own language.
+var LANG_SHORT = { en: "EN", hy: "ՀԱՅ", ru: "РУС" };
 
 var VANADZOR_LANG = "en";
 
