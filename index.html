@@ -1422,6 +1422,12 @@
         opacity: 0.6;
         letter-spacing: 0.1em;
       }
+      /* The label wraps rather than running past its own frame. It said
+         nowrap while the page was English-only, where it fits a 320px
+         screen; a longer label -- a translation, or a reworded one --
+         overflowed the button instead of using a second line.
+         text-wrap:balance splits those two lines evenly where it is
+         understood and is ignored where it is not. */
       .download-btn {
         display: flex;
         align-items: center;
@@ -1429,7 +1435,8 @@
         width: fit-content;
         max-width: 100%;
         box-sizing: border-box;
-        white-space: nowrap;
+        text-align: center;
+        text-wrap: balance;
         font-family: var(--mono);
         font-size: clamp(0.55rem, 2.6vw, 0.72rem);
         font-weight: 600;
@@ -6313,7 +6320,7 @@
               cards for the cat-count, masthead stamp, or meta description totals.
             -->
             <div
-              class="card"
+              class="card" data-duplicate="true"
               data-cat="Transport &amp; Delivery"
               data-search="gg shuttle shared taxi, taxi choose the gg shuttle option in the app for intercity trips, 📱 has app 💯 recommended"
             >
@@ -13975,7 +13982,7 @@
               cards for the cat-count, masthead stamp, or meta description totals.
             -->
             <div
-              class="card"
+              class="card" data-duplicate="true"
               data-cat="Leisure"
               data-geo="40.810215,44.487512"
               data-search="loft coworking place/gamezone tigran mets st. 24 https://yandex.com/maps/org/37978917509 leisure +37441408835 https://instagram.com/loft.vanadzor open mon–sat 10:00–19:00."
@@ -15898,13 +15905,20 @@
             }
           }
           var show = matchesCat && matchesSearch;
+          // A cross-referenced copy is one entry filed under a second
+          // subcategory, not a second entry. The masthead total has always
+          // excluded them, so this counter has to as well, or an unfiltered
+          // page reports two more entries than it says it holds. The copy is
+          // still shown -- being findable in both places is the whole point of
+          // it -- it just isn't counted twice. build.py stamps the attribute.
+          var isDuplicate = card.getAttribute("data-duplicate") === "true";
           var isFilteredOff =
             card.className.indexOf("personal-off") !== -1 ||
             card.className.indexOf("favorite-off") !== -1 ||
             card.className.indexOf("visited-off") !== -1;
           if (show) {
             card.className = card.className.replace(/\bhidden\b/g, "");
-            if (!isFilteredOff) {
+            if (!isFilteredOff && !isDuplicate) {
               visibleCount++;
             }
           } else {
