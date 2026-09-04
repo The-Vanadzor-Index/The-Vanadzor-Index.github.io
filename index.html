@@ -498,7 +498,12 @@
          thing the document contains. */
       .lang-picker {
         position: absolute;
-        top: 1.2rem;
+        /* The pill row (padding 2px + border 1px + a 0.62rem line at
+           0.4rem top/bottom padding) is shorter than .theme-toggle's fixed
+           38px button, so its top sits lower by half that difference —
+           keeping its own height untouched while centering it on the
+           button across the masthead. */
+        top: calc(1.2rem + (38px - (1.42rem + 6px)) / 2);
         left: 1.2rem;
         z-index: 5;
         display: flex;
@@ -544,7 +549,9 @@
       }
       @media (max-width: 420px) {
         .lang-picker {
-          top: 0.9rem;
+          /* Narrower pill padding here shrinks the row's own height, so the
+             centering offset (see the base rule) is recomputed against it. */
+          top: calc(1.2rem + (38px - (1.3rem + 6px)) / 2);
           left: 0.9rem;
         }
         .lang-pill {
