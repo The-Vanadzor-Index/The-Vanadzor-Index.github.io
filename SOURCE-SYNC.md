@@ -51,6 +51,123 @@ Synced: no
 
 ---
 
+## 2026-10-29
+
+### Edited — Yandex Maps refresh across 199 linked entries
+
+Every Yandex Maps link on the site was re-read and compared with what the card already says — a
+refresh this time, not only a gap fill. Values the 2026-08-14 pass took from Yandex were replaced
+where Yandex has since changed them; values from the Notion rows were left alone, as before.
+
+The upstream Contacts schema has changed since the last sync: the Yandex link now lives in
+`Локация` (`url`), and the street address in `Адрес` (text, formerly `Адрес текстом`). The
+entries below use the new names. Addresses are given in the Russian form upstream already uses.
+
+What did not change, for the record: no linked org has moved more than 20 m except Glamping
+Park, and no org has gone away. Yandex now lists **Gandzak Food Court as temporarily
+closed** (it was open on 2026-08-14); the five closures noted then are unchanged. No card is
+changed for either — it wants a local check. Yandex has also dropped opening hours for Compliment,
+Gandzak Food Court and Cinema Zone, and both phone numbers for Cinema Zone; the cards keep them.
+
+Coordinates (`data-geo`) were refreshed on six cards — Медцентр Вардананц, Red Mobile, Compliment,
+Bar B.Q., Glamping Park (≈480 m) and Elite Gym. They have no upstream column. Synced: n/a.
+
+### Edited — Yandex Maps refresh, 10 entries (Контакты и база знаний)
+Synced: no
+
+- **Пром-тест** — Телефон: + `8599` (short number, listed by Yandex alongside the two already on
+  the card)
+- **Изагри** — Телефон: + `+79889523242`
+- **Domus — мебельный и строительный магазин** — Часы работы: Пн–Сб 10:00–20:30, Вс 11:00–20:00
+  (was Пн–Сб 10:00–19:00, Вс 11:00–18:30). Ссылка: https://www.instagram.com/domus_stores/ —
+  the site card also gained https://www.facebook.com/domushipermarket/, which has no second
+  column to go to.
+- **Elite Gym** — Часы работы: Пн–Пт 09:00–22:00, Сб 09:00–21:00, Вс 10:00–21:00 (was Пн–Пт
+  08:00–22:00, Сб 09:00–21:00).
+- **1-я поликлиника** — Часы работы: Пн–Пт 09:00–18:00.
+- **Food Garden** — Адрес: Карена Демирчяна, 1/7 (Yandex had only the region on 2026-08-14).
+- **Compliment** — Адрес: Тигран Мец, 38/1 (was 38). Yandex has renamed this org "Tasty
+  Compliment" and gives it the Instagram of the separate **Tasty Compliment — кондитерская,
+  изготовление на заказ** row (Тигран Мец, 38/2), at identical coordinates to a second org of
+  that name. The two rows are very likely one business; not merged, since that is etonawa's call.
+- **KFC** — the site card gained
+  https://www.facebook.com/pages/category/American-Restaurant/KFC-Vanadzor-1073039119386373/;
+  Ссылка already holds the website.
+- **Jazz Cafe** — the site card gained
+  https://www.facebook.com/pages/category/Restaurant/Jazzcafe-Vanadzor-1582854848625347/;
+  Ссылка already holds the Instagram.
+- **Apart Hotel Sayat-Nova** — Ссылка: https://www.facebook.com/people/Hotel-apart-Sayat-Nova/100064167819619/
+
+### Edited — building-page contamination from 2026-08-14 removed, 8 entries (Контакты и база знаний)
+Synced: n/a — the removed values were never pushed upstream; this only stops them being replayed.
+
+Салон красоты И. Саакян, Парикмахер, Мужские стрижки, Армен, Материалы для рукоделия, Материалы
+для рукоделия, ткани, Травы и специи, Изготовление ключей, Эдгар and FightLife — кросс-фит, бокс
+link to a Yandex building page, not an org, and the 2026-08-14 pass filled them from the first
+business that building lists. Their opening hours were removed from the site, as were
+`+37493388672` and `+37491388672` on Мужские стрижки, Армен (a real-estate agency's numbers).
+`+37491023706`, which came from the Notion row, stays. The addresses are the building's own and
+were kept. Their coordinates are the building's and were never wrong.
+
+### Added — Panorama Kids / V Play (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3ea2f9074e57806d9faceaef99a66926`).
+Yandex supplied the extras below, which the row does not have yet (Synced: no):
+
+- Адрес: Тигран Мец, 81
+- Телефон: +37493901199
+- Часы работы: ежедневно 12:00–22:00
+
+### Added — Школа №18 — 1-9 классы на русском (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3e22f9074e5780d8afa2f05d4a8eaa0f`).
+Filed on the site under Leisure › For Kids beside Schools No. 4 and No. 11. Yandex extras
+(Synced: no):
+
+- Адрес: Ереванское шоссе, 151
+- Телефон: +37432237809
+- Ссылка: https://www.facebook.com/Vanadzor18school/
+
+### Added — CasaVana (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3bd2f9074e578097a9fee1f82ea6a77f`).
+Yandex extras (Synced: no):
+
+- Локация: https://maps.app.goo.gl/EgFXixMequxg433C6 → https://yandex.com/maps/org/173869740651/
+  (the same place, Гарегина Нжде, 14/2; a Yandex link is what gives the card exact coordinates)
+- Телефон 2: +37455011052
+- Часы работы: ежедневно 11:00–23:00
+- The site card also carries https://www.facebook.com/Casavana.am, which has no second column.
+
+### Added — Ringo (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3b72f9074e578059aaa9c7d7a6f4f017`).
+Yandex extras (Synced: no):
+
+- Часы работы: ежедневно 10:00–22:00
+
+Yandex has no street address for it, only the region, so the card carries none.
+
+### Added — Eva Kitchen Delivery (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3b92f9074e57805c85a4d8e5527459a0`).
+Not on Yandex Maps.
+
+### Added — Детский невролог Алвард Костанян (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3b92f9074e5780eeb8c7cf9d10d4cab2`),
+including its page-body note (works at Медцентр Вардананц; book in person, not by phone). Filed as
+an individual's contact.
+
+### Added — Реставрация мебели, Альбина (Контакты и база знаний)
+Synced: n/a — ported from the existing upstream row (page `3b72f9074e578026bad5f9f5fb2df2a8`).
+Filed under Services › Other Repairs as an individual's contact. Not on Yandex Maps.
+
+### Edited — Ванадзор – Дилижан (Транспорт и доставка)
+Synced: yes — the change originated upstream.
+
+- Name: Дилижан – Ванадзор → Ванадзор – Дилижан (the card moved beside the other Vanadzor – X
+  routes)
+
+### Edited — Ванадзор – Степанаван (Транспорт и доставка)
+Synced: yes — the change originated upstream.
+
+- Цены: 400 драм → 450 драм
+
 ## 2026-08-14
 
 ### Edited — Yandex Maps field fill across 184 linked entries
@@ -85,6 +202,14 @@ Caveats worth carrying, since they are the reason this was not applied blindly:
   No card was changed for this; it wants a human check.
 - Yandex holds no website for any of these orgs — the org page carries social links only — so no
   `Ссылка` value below is a business's own site.
+- **Corrected on 2026-10-29 — do not replay these rows as written.** Eight entries linked to a
+  Yandex *building* page (`/maps/…/house/…`) rather than an org were filled from whichever
+  business that building's page listed first: Салон красоты И. Саакян, Парикмахер, Мужские
+  стрижки, Армен, Материалы для рукоделия, Материалы для рукоделия, ткани, Травы и специи,
+  Изготовление ключей, Эдгар and FightLife. Their Часы работы below belong to a post office,
+  a shoe shop, a supermarket, a Wildberries pickup point and so on, and Мужские стрижки, Армен's
+  two numbers belong to a real-estate agency. The addresses are the building's own and stand.
+  See the 2026-10-29 entry.
 
 ### Edited — Yandex Maps field fill, 181 entries (Контакты и база знаний)
 Synced: no
